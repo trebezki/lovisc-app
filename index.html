@@ -469,28 +469,29 @@ boundaryPolygon.bindPopup('<b>🌲 LD Majšperk 258</b><br>Meja lovišča');
 // ============================================================
 const playerIcon = L.divIcon({
   html: `<div id="player-arrow" style="
-    width: 0; height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 24px solid #f5a623;
-    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
-    transform-origin: center 16px;
-  "></div>`,
+    width: 28px;
+    height: 28px;
+    position: relative;
+    transform-origin: center center;
+  ">
+    <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="14,2 22,24 14,20 6,24" fill="#f5a623" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+    </svg>
+  </div>`,
   className: '',
-  iconSize: [20, 24],
-  iconAnchor: [10, 16],
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
 });
 
-// Kompas - obrača trikotnik glede na smer telefona
+// Kompas
 let currentHeading = 0;
+let compassStarted = false;
 
 function updateHeading(event) {
   let heading = 0;
-  if (event.webkitCompassHeading !== undefined) {
-    // iOS
+  if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
     heading = event.webkitCompassHeading;
   } else if (event.alpha !== null) {
-    // Android
     heading = 360 - event.alpha;
   }
   currentHeading = heading;
@@ -498,10 +499,12 @@ function updateHeading(event) {
   if (arrow) arrow.style.transform = `rotate(${heading}deg)`;
 }
 
-// Zahteva dovoljenje za kompas (iOS 13+)
 function startCompass() {
+  if (compassStarted) return;
+  compassStarted = true;
   if (typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+ - mora biti klicano po user gesture
     DeviceOrientationEvent.requestPermission()
       .then(response => {
         if (response === 'granted') {
@@ -509,11 +512,14 @@ function startCompass() {
         }
       }).catch(console.error);
   } else {
+    // Android / ostali
     window.addEventListener('deviceorientation', updateHeading, true);
   }
 }
 
-startCompass();
+// Kompas se zažene ob prvem dotiku (iOS zahteva user gesture)
+document.addEventListener('touchstart', () => { startCompass(); }, { once: true });
+document.addEventListener('click', () => { startCompass(); }, { once: true });
 
 let playerMarker = null;
 let accuracyCircle = null;
