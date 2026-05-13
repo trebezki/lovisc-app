@@ -343,6 +343,7 @@
   </div>
   <button id="btn-center" onclick="centerOnMe()" title="Moja lokacija">📍</button>
   <button id="btn-map-toggle" onclick="toggleMap()" title="Zamenjaj mapo">🛰️</button>
+  <button id="btn-compass" onclick="requestCompass()" title="Vklopi kompas">🧭</button>
   <div class="info-block">
     <span class="info-label">Natančnost</span>
     <span class="info-value" id="acc-display">—</span>
@@ -514,6 +515,28 @@ function startCompass() {
   } else {
     // Android / ostali
     window.addEventListener('deviceorientation', updateHeading, true);
+  }
+}
+
+function requestCompass() {
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+
+    DeviceOrientationEvent.requestPermission()
+      .then(response => {
+        if (response === 'granted') {
+          window.addEventListener('deviceorientation', updateHeading, true);
+          document.getElementById('btn-compass').textContent = '✅';
+        } else {
+          alert('Dovoljenje za kompas zavrnjeno!');
+        }
+      }).catch(e => {
+        alert('Napaka kompasa: ' + e);
+      });
+  } else {
+    // Android - ne rabi dovoljenja
+    window.addEventListener('deviceorientation', updateHeading, true);
+    document.getElementById('btn-compass').textContent = '✅';
   }
 }
 
