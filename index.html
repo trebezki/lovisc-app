@@ -425,12 +425,11 @@ const map = L.map('map', {
   markerZoomAnimation: true,
 });
 
-// Satelitski pogled - Google Maps satelit
-L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-  maxZoom: 20,
+// Satelitski pogled - Esri (hiter, brezplačen, deluje)
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19,
   minZoom: 8,
-  attribution: '© Google',
-  subdomains: ['0','1','2','3'],
+  attribution: '© Esri',
   keepBuffer: 4,
   updateWhenIdle: false,
   updateWhenZooming: false,
@@ -570,8 +569,8 @@ if ('geolocation' in navigator) {
 let isSatellite = true;
 let currentTileLayer = null;
 
-const satelliteLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-  maxZoom: 20, minZoom: 8, subdomains: ['0','1','2','3'], keepBuffer: 4,
+const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19, minZoom: 8, keepBuffer: 4,
   updateWhenIdle: false, updateWhenZooming: false,
 });
 
