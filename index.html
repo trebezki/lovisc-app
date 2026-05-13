@@ -173,7 +173,7 @@
     }
 
     /* CENTER BUTTON */
-    #btn-center {
+    #btn-center, #btn-map-toggle {
       background: var(--green-mid);
       border: 2px solid var(--green-bright);
       color: var(--cream);
@@ -189,7 +189,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     }
 
-    #btn-center:active {
+    #btn-center:active, #btn-map-toggle:active {
       background: var(--green-light);
       transform: scale(0.95);
     }
@@ -331,6 +331,7 @@
     <span class="info-value" id="lng-display">—</span>
   </div>
   <button id="btn-center" onclick="centerOnMe()" title="Moja lokacija">🎯</button>
+  <button id="btn-map-toggle" onclick="toggleMap()" title="Zamenjaj mapo">🛰️</button>
   <div class="info-block">
     <span class="info-label">Natančnost</span>
     <span class="info-value" id="acc-display">—</span>
@@ -418,12 +419,21 @@ function pointInPolygon(lat, lng, polygon) {
 const map = L.map('map', {
   zoomControl: true,
   attributionControl: false,
+  preferCanvas: true,
+  zoomAnimation: true,
+  fadeAnimation: true,
+  markerZoomAnimation: true,
 });
 
-// OpenStreetMap tiles
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '© OpenStreetMap'
+// Satelitski pogled - Google Maps satelit
+L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+  maxZoom: 20,
+  minZoom: 8,
+  attribution: '© Google',
+  subdomains: ['0','1','2','3'],
+  keepBuffer: 4,
+  updateWhenIdle: false,
+  updateWhenZooming: false,
 }).addTo(map);
 
 // Začetni pogled - center Majšperka
@@ -554,7 +564,39 @@ if ('geolocation' in navigator) {
 // ============================================================
 // FUNCTIONS
 // ============================================================
-function centerOnMe() {
+// ============================================================
+// MAP TOGGLE
+// ============================================================
+let isSatellite = true;
+let currentTileLayer = null;
+
+const satelliteLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+  maxZoom: 20, minZoom: 8, subdomains: ['0','1','2','3'], keepBuffer: 4,
+  updateWhenIdle: false, updateWhenZooming: false,
+});
+
+const normalLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  maxZoom: 19, minZoom: 8, subdomains: 'abcd', keepBuffer: 4,
+  updateWhenIdle: false, updateWhenZooming: false,
+});
+
+function toggleMap() {
+  if (isSatellite) {
+    map.removeLayer(satelliteLayer);
+    normalLayer.addTo(map);
+    normalLayer.bringToBack();
+    document.getElementById('btn-map-toggle').textContent = '🗺️';
+    isSatellite = false;
+  } else {
+    map.removeLayer(normalLayer);
+    satelliteLayer.addTo(map);
+    satelliteLayer.bringToBack();
+    document.getElementById('btn-map-toggle').textContent = '🛰️';
+    isSatellite = true;
+  }
+  // Meja mora biti vedno na vrhu
+  boundaryPolygon.bringToFront();
+}
   isFollowing = true;
   if (lastPosition) {
     map.setView([lastPosition.lat, lastPosition.lng], 15);
