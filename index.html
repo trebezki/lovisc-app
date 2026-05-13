@@ -425,14 +425,17 @@ const map = L.map('map', {
   markerZoomAnimation: true,
 });
 
-// Satelitski pogled - Esri (hiter, brezplačen, deluje)
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-  maxZoom: 19,
+// MapTiler satelit - hiter, smooth
+const MAPTILER_KEY = '8MprynDQ4qJMQcD3R5X2';
+
+L.tileLayer(`https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+  maxZoom: 20,
   minZoom: 8,
-  attribution: '© Esri',
-  keepBuffer: 4,
+  attribution: '© MapTiler',
+  keepBuffer: 6,
   updateWhenIdle: false,
   updateWhenZooming: false,
+  crossOrigin: true,
 }).addTo(map);
 
 // Začetni pogled - center Majšperka
@@ -569,13 +572,13 @@ if ('geolocation' in navigator) {
 let isSatellite = true;
 let currentTileLayer = null;
 
-const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-  maxZoom: 19, minZoom: 8, keepBuffer: 4,
+const satelliteLayer = L.tileLayer(`https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+  maxZoom: 20, minZoom: 8, keepBuffer: 6, crossOrigin: true,
   updateWhenIdle: false, updateWhenZooming: false,
 });
 
-const normalLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  maxZoom: 19, minZoom: 8, subdomains: 'abcd', keepBuffer: 4,
+const normalLayer = L.tileLayer(`https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, {
+  maxZoom: 20, minZoom: 8, keepBuffer: 6, crossOrigin: true,
   updateWhenIdle: false, updateWhenZooming: false,
 });
 
