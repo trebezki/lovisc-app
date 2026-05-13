@@ -596,6 +596,7 @@ function toggleMap() {
   // Meja mora biti vedno na vrhu
   boundaryPolygon.bringToFront();
 }
+function centerOnMe() {
   isFollowing = true;
   if (lastPosition) {
     map.setView([lastPosition.lat, lastPosition.lng], 15);
