@@ -13,21 +13,22 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --green-dark: #1a2e1a;
-      --green-mid: #2d5016;
-      --green-light: #4a7c2f;
-      --green-bright: #6aab3a;
-      --amber: #d4820a;
-      --amber-light: #f5a623;
-      --red: #c0392b;
-      --cream: #f5f0e8;
-      --bark: #5c3d1e;
+      --bg: #1a2e1a;
+      --surface: #1f3a1f;
+      --surface2: #2d5016;
+      --accent: #6aab3a;
+      --accent2: #4a7c2f;
+      --amber: #f5a623;
+      --red: #e74c3c;
+      --text: #f5f0e8;
+      --text-dim: #8aab6a;
+      --border: rgba(106,171,58,0.35);
     }
 
     body {
       font-family: 'Georgia', serif;
-      background: var(--green-dark);
-      color: var(--cream);
+      background: var(--bg);
+      color: var(--text);
       height: 100dvh;
       display: flex;
       flex-direction: column;
@@ -36,12 +37,12 @@
 
     /* HEADER */
     #header {
-      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
-      padding: 10px 16px 8px;
+      background: var(--surface);
+      padding: 12px 16px 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 2px solid var(--green-bright);
+      border-bottom: 1px solid var(--border);
       z-index: 1000;
       flex-shrink: 0;
     }
@@ -49,7 +50,7 @@
     #header-left {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     #header-icon {
@@ -58,15 +59,19 @@
     }
 
     #header-text h1 {
-      font-size: 15px;
-      font-weight: bold;
-      color: var(--amber-light);
-      letter-spacing: 0.5px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--amber);
+      letter-spacing: 1px;
+      text-transform: uppercase;
     }
 
     #header-text p {
       font-size: 10px;
-      color: var(--green-bright);
+      color: var(--text-dim);
+      margin-top: 2px;
+      letter-spacing: 0.5px;
+      font-family: 'Georgia', serif;
       font-style: italic;
     }
 
@@ -81,51 +86,52 @@
       display: flex;
       align-items: center;
       gap: 5px;
-      font-size: 11px;
-      color: var(--cream);
+      font-size: 10px;
+      color: var(--text-dim);
     }
 
     #gps-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
-      background: #888;
+      background: #555;
       transition: background 0.3s;
     }
 
-    #gps-dot.active { background: var(--green-bright); animation: pulse 2s infinite; }
+    #gps-dot.active { background: var(--accent); animation: pulse 2s infinite; }
     #gps-dot.error { background: var(--red); }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.3); }
+      50% { opacity: 0.4; transform: scale(1.4); }
     }
 
     #boundary-status {
       font-size: 10px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-weight: bold;
-      letter-spacing: 0.5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
     }
 
     #boundary-status.inside {
-      background: var(--green-mid);
-      color: var(--green-bright);
-      border: 1px solid var(--green-bright);
+      background: rgba(46,204,113,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(46,204,113,0.4);
     }
 
     #boundary-status.outside {
-      background: var(--red);
-      color: white;
-      border: 1px solid #e74c3c;
+      background: rgba(231,76,60,0.2);
+      color: #ff6b6b;
+      border: 1px solid rgba(231,76,60,0.5);
       animation: blink 0.8s infinite;
     }
 
     #boundary-status.unknown {
-      background: #444;
-      color: #aaa;
-      border: 1px solid #666;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-dim);
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
     @keyframes blink {
@@ -142,9 +148,9 @@
 
     /* BOTTOM BAR */
     #bottom-bar {
-      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
-      border-top: 2px solid var(--green-bright);
-      padding: 8px 16px 12px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 10px 16px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -157,48 +163,49 @@
       flex-direction: column;
       align-items: center;
       gap: 2px;
+      min-width: 58px;
     }
 
     .info-label {
-      font-size: 9px;
-      color: var(--green-bright);
+      font-size: 8px;
+      color: var(--text-dim);
       text-transform: uppercase;
       letter-spacing: 1px;
     }
 
     .info-value {
-      font-size: 13px;
-      color: var(--cream);
-      font-weight: bold;
+      font-size: 12px;
+      color: var(--text);
+      font-weight: 600;
     }
 
     /* CENTER BUTTON */
     #btn-center, #btn-map-toggle {
-      background: var(--green-mid);
-      border: 2px solid var(--green-bright);
-      color: var(--cream);
-      width: 48px;
-      height: 48px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 46px;
+      height: 46px;
       border-radius: 50%;
-      font-size: 22px;
+      font-size: 20px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      transition: all 0.15s;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
 
     #btn-center:active, #btn-map-toggle:active {
-      background: var(--green-light);
-      transform: scale(0.95);
+      background: var(--accent2);
+      transform: scale(0.93);
     }
 
     /* ALERT OVERLAY */
     #alert-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(192, 57, 43, 0.92);
+      background: rgba(231, 76, 60, 0.96);
       z-index: 9999;
       display: none;
       flex-direction: column;
@@ -211,58 +218,58 @@
     #alert-overlay.show { display: flex; }
 
     #alert-overlay .alert-icon { font-size: 72px; }
-    #alert-overlay h2 { font-size: 28px; text-align: center; }
-    #alert-overlay p { font-size: 16px; text-align: center; opacity: 0.9; }
+    #alert-overlay h2 { font-size: 26px; text-align: center; font-weight: 700; }
+    #alert-overlay p { font-size: 15px; text-align: center; opacity: 0.85; }
 
     #btn-dismiss {
       margin-top: 16px;
       background: white;
       color: var(--red);
       border: none;
-      padding: 14px 32px;
+      padding: 14px 36px;
       border-radius: 30px;
       font-size: 16px;
-      font-weight: bold;
+      font-weight: 700;
       cursor: pointer;
-      font-family: 'Georgia', serif;
     }
 
     /* LOADING */
     #loading {
       position: fixed;
       inset: 0;
-      background: var(--green-dark);
+      background: var(--bg);
       z-index: 99999;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 20px;
+      gap: 16px;
     }
 
-    #loading .load-icon { font-size: 64px; animation: sway 2s ease-in-out infinite; }
+    #loading .load-icon { font-size: 64px; animation: sway 1.5s ease-in-out infinite; }
 
     @keyframes sway {
-      0%, 100% { transform: rotate(-5deg); }
-      50% { transform: rotate(5deg); }
+      0%, 100% { transform: rotate(-8deg) scale(1); }
+      50% { transform: rotate(8deg) scale(1.05); }
     }
 
-    #loading h2 { font-size: 22px; color: var(--amber-light); }
-    #loading p { font-size: 14px; color: var(--green-bright); font-style: italic; }
+    #loading h2 { font-size: 18px; color: var(--amber); font-weight: 700; letter-spacing: 1px; }
+    #loading p { font-size: 12px; color: var(--text-dim); letter-spacing: 0.5px; }
 
     .load-bar {
-      width: 200px;
-      height: 4px;
-      background: var(--green-mid);
+      width: 180px;
+      height: 3px;
+      background: var(--surface2);
       border-radius: 2px;
       overflow: hidden;
+      margin-top: 8px;
     }
 
     .load-bar-inner {
       height: 100%;
-      background: var(--green-bright);
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
       border-radius: 2px;
-      animation: load 2s ease-in-out infinite;
+      animation: load 1.8s ease-in-out infinite;
     }
 
     @keyframes load {
@@ -270,14 +277,18 @@
       100% { width: 100%; }
     }
 
-    /* Leaflet customization */
+    /* Leaflet */
     .leaflet-control-zoom {
-      border: 2px solid var(--green-bright) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 8px !important;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
     }
     .leaflet-control-zoom a {
-      background: var(--green-dark) !important;
-      color: var(--cream) !important;
-      border-color: var(--green-bright) !important;
+      background: var(--surface) !important;
+      color: var(--text) !important;
+      border-color: var(--border) !important;
+      font-weight: 600 !important;
     }
   </style>
 </head>
@@ -285,8 +296,8 @@
 
 <!-- LOADING SCREEN -->
 <div id="loading">
-  <div class="load-icon">🦌</div>
-  <h2>LD Majšperk</h2>
+  <div class="load-icon">🐗</div>
+  <h2>LD DRAVINJA MAJŠPERK</h2>
   <p>Nalaganje zemljevida...</p>
   <div class="load-bar"><div class="load-bar-inner"></div></div>
 </div>
@@ -302,10 +313,10 @@
 <!-- HEADER -->
 <div id="header">
   <div id="header-left">
-    <div id="header-icon">🌲</div>
+    <div id="header-icon">🐗</div>
     <div id="header-text">
-      <h1>LD MAJŠPERK 258</h1>
-      <p>Dravinja • Lovišče</p>
+      <h1>LD DRAVINJA MAJŠPERK</h1>
+      <p>Meja lovišča</p>
     </div>
   </div>
   <div id="status-badge">
@@ -330,7 +341,7 @@
     <span class="info-label">Dolžina</span>
     <span class="info-value" id="lng-display">—</span>
   </div>
-  <button id="btn-center" onclick="centerOnMe()" title="Moja lokacija">🎯</button>
+  <button id="btn-center" onclick="centerOnMe()" title="Moja lokacija">📍</button>
   <button id="btn-map-toggle" onclick="toggleMap()" title="Zamenjaj mapo">🛰️</button>
   <div class="info-block">
     <span class="info-label">Natančnost</span>
@@ -457,27 +468,52 @@ boundaryPolygon.bindPopup('<b>🌲 LD Majšperk 258</b><br>Meja lovišča');
 // GPS MARKER
 // ============================================================
 const playerIcon = L.divIcon({
-  html: `<div style="
-    width: 20px; height: 20px;
-    background: #f5a623;
-    border: 3px solid white;
-    border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-    position: relative;
-  ">
-    <div style="
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%,-50%);
-      width: 6px; height: 6px;
-      background: white;
-      border-radius: 50%;
-    "></div>
-  </div>`,
+  html: `<div id="player-arrow" style="
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 24px solid #f5a623;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+    transform-origin: center 16px;
+  "></div>`,
   className: '',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+  iconSize: [20, 24],
+  iconAnchor: [10, 16],
 });
+
+// Kompas - obrača trikotnik glede na smer telefona
+let currentHeading = 0;
+
+function updateHeading(event) {
+  let heading = 0;
+  if (event.webkitCompassHeading !== undefined) {
+    // iOS
+    heading = event.webkitCompassHeading;
+  } else if (event.alpha !== null) {
+    // Android
+    heading = 360 - event.alpha;
+  }
+  currentHeading = heading;
+  const arrow = document.getElementById('player-arrow');
+  if (arrow) arrow.style.transform = `rotate(${heading}deg)`;
+}
+
+// Zahteva dovoljenje za kompas (iOS 13+)
+function startCompass() {
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(response => {
+        if (response === 'granted') {
+          window.addEventListener('deviceorientation', updateHeading, true);
+        }
+      }).catch(console.error);
+  } else {
+    window.addEventListener('deviceorientation', updateHeading, true);
+  }
+}
+
+startCompass();
 
 let playerMarker = null;
 let accuracyCircle = null;
@@ -570,7 +606,6 @@ if ('geolocation' in navigator) {
 // MAP TOGGLE
 // ============================================================
 let isSatellite = true;
-let currentTileLayer = null;
 
 const satelliteLayer = L.tileLayer(`https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
   maxZoom: 20, minZoom: 8, keepBuffer: 6, crossOrigin: true,
@@ -584,20 +619,18 @@ const normalLayer = L.tileLayer(`https://api.maptiler.com/maps/outdoor-v2/{z}/{x
 
 function toggleMap() {
   if (isSatellite) {
-    map.removeLayer(satelliteLayer);
+    map.eachLayer(layer => { if (layer instanceof L.TileLayer) map.removeLayer(layer); });
     normalLayer.addTo(map);
-    normalLayer.bringToBack();
-    document.getElementById('btn-map-toggle').textContent = '🗺️';
+    document.getElementById('btn-map-toggle').textContent = '🛰️';
     isSatellite = false;
   } else {
-    map.removeLayer(normalLayer);
+    map.eachLayer(layer => { if (layer instanceof L.TileLayer) map.removeLayer(layer); });
     satelliteLayer.addTo(map);
-    satelliteLayer.bringToBack();
-    document.getElementById('btn-map-toggle').textContent = '🛰️';
+    document.getElementById('btn-map-toggle').textContent = '🗺️';
     isSatellite = true;
   }
-  // Meja mora biti vedno na vrhu
   boundaryPolygon.bringToFront();
+  if (playerMarker) playerMarker.bringToFront();
 }
 function centerOnMe() {
   isFollowing = true;
