@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LD Majšperk" />
+  <title>LD Majšperk - Lovišče</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --green-dark: #1a2e1a;
+      --green-mid: #2d5016;
+      --green-light: #4a7c2f;
+      --green-bright: #6aab3a;
+      --amber: #d4820a;
+      --amber-light: #f5a623;
+      --red: #c0392b;
+      --cream: #f5f0e8;
+      --bark: #5c3d1e;
+    }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: var(--green-dark);
+      color: var(--cream);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* HEADER */
+    #header {
+      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
+      padding: 10px 16px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--green-bright);
+      z-index: 1000;
+      flex-shrink: 0;
+    }
+
+    #header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #header-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    #header-text h1 {
+      font-size: 15px;
+      font-weight: bold;
+      color: var(--amber-light);
+      letter-spacing: 0.5px;
+    }
+
+    #header-text p {
+      font-size: 10px;
+      color: var(--green-bright);
+      font-style: italic;
+    }
+
+    #status-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
+    }
+
+    #gps-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--cream);
+    }
+
+    #gps-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #888;
+      transition: background 0.3s;
+    }
+
+    #gps-dot.active { background: var(--green-bright); animation: pulse 2s infinite; }
+    #gps-dot.error { background: var(--red); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    #boundary-status {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    #boundary-status.inside {
+      background: var(--green-mid);
+      color: var(--green-bright);
+      border: 1px solid var(--green-bright);
+    }
+
+    #boundary-status.outside {
+      background: var(--red);
+      color: white;
+      border: 1px solid #e74c3c;
+      animation: blink 0.8s infinite;
+    }
+
+    #boundary-status.unknown {
+      background: #444;
+      color: #aaa;
+      border: 1px solid #666;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* MAP */
+    #map {
+      flex: 1;
+      width: 100%;
+      z-index: 1;
+    }
+
+    /* BOTTOM BAR */
+    #bottom-bar {
+      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
+      border-top: 2px solid var(--green-bright);
+      padding: 8px 16px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 1000;
+    }
+
+    .info-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .info-label {
+      font-size: 9px;
+      color: var(--green-bright);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .info-value {
+      font-size: 13px;
+      color: var(--cream);
+      font-weight: bold;
+    }
+
+    /* CENTER BUTTON */
+    #btn-center {
+      background: var(--green-mid);
+      border: 2px solid var(--green-bright);
+      color: var(--cream);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    #btn-center:active {
+      background: var(--green-light);
+      transform: scale(0.95);
+    }
+
+    /* ALERT OVERLAY */
+    #alert-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(192, 57, 43, 0.92);
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 32px;
+    }
+
+    #alert-overlay.show { display: flex; }
+
+    #alert-overlay .alert-icon { font-size: 72px; }
+    #alert-overlay h2 { font-size: 28px; text-align: center; }
+    #alert-overlay p { font-size: 16px; text-align: center; opacity: 0.9; }
+
+    #btn-dismiss {
+      margin-top: 16px;
+      background: white;
+      color: var(--red);
+      border: none;
+      padding: 14px 32px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: 'Georgia', serif;
+    }
+
+    /* LOADING */
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: var(--green-dark);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    #loading .load-icon { font-size: 64px; animation: sway 2s ease-in-out infinite; }
+
+    @keyframes sway {
+      0%, 100% { transform: rotate(-5deg); }
+      50% { transform: rotate(5deg); }
+    }
+
+    #loading h2 { font-size: 22px; color: var(--amber-light); }
+    #loading p { font-size: 14px; color: var(--green-bright); font-style: italic; }
+
+    .load-bar {
+      width: 200px;
+      height: 4px;
+      background: var(--green-mid);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .load-bar-inner {
+      height: 100%;
+      background: var(--green-bright);
+      border-radius: 2px;
+      animation: load 2s ease-in-out infinite;
+    }
+
+    @keyframes load {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+
+    /* Leaflet customization */
+    .leaflet-control-zoom {
+      border: 2px solid var(--green-bright) !important;
+    }
+    .leaflet-control-zoom a {
+      background: var(--green-dark) !important;
+      color: var(--cream) !important;
+      border-color: var(--green-bright) !important;
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loading">
+  <div class="load-icon">🦌</div>
+  <h2>LD Majšperk</h2>
+  <p>Nalaganje zemljevida...</p>
+  <div class="load-bar"><div class="load-bar-inner"></div></div>
+</div>
+
+<!-- ALERT: OUTSIDE BOUNDARY -->
+<div id="alert-overlay">
+  <div class="alert-icon">⚠️</div>
+  <h2>Zunaj lovišča!</h2>
+  <p>Zapustil si meje lovišča LD Majšperk 258.</p>
+  <button id="btn-dismiss" onclick="dismissAlert()">Razumem</button>
+</div>
+
+<!-- HEADER -->
+<div id="header">
+  <div id="header-left">
+    <div id="header-icon">🌲</div>
+    <div id="header-text">
+      <h1>LD MAJŠPERK 258</h1>
+      <p>Dravinja • Lovišče</p>
+    </div>
+  </div>
+  <div id="status-badge">
+    <div id="gps-status">
+      <div id="gps-dot"></div>
+      <span id="gps-text">Čakam GPS...</span>
+    </div>
+    <div id="boundary-status" class="unknown">NEZNAN POLOŽAJ</div>
+  </div>
+</div>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- BOTTOM BAR -->
+<div id="bottom-bar">
+  <div class="info-block">
+    <span class="info-label">Širina</span>
+    <span class="info-value" id="lat-display">—</span>
+  </div>
+  <div class="info-block">
+    <span class="info-label">Dolžina</span>
+    <span class="info-value" id="lng-display">—</span>
+  </div>
+  <button id="btn-center" onclick="centerOnMe()" title="Moja lokacija">🎯</button>
+  <div class="info-block">
+    <span class="info-label">Natančnost</span>
+    <span class="info-value" id="acc-display">—</span>
+  </div>
+  <div class="info-block">
+    <span class="info-label">Nadm. viš.</span>
+    <span class="info-value" id="alt-display">—</span>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// MEJA LOVIŠČA LD MAJŠPERK 258
+// Koordinate določene iz uradne lovske mape
+// Format: [latitude, longitude]
+// ============================================================
+const BOUNDARY_COORDS = [
+  [46.4010, 15.7050],  // SZ kot - pri Kidričevem
+  [46.4020, 15.7300],
+  [46.4015, 15.7500],
+  [46.4005, 15.7650],
+  [46.3990, 15.7850],  // Sever - Kidričevo območje
+  [46.3970, 15.8000],
+  [46.3950, 15.8100],
+  [46.3920, 15.8150],  // SV - Apače
+  [46.3880, 15.8120],
+  [46.3850, 15.8050],
+  [46.3820, 15.7980],
+  [46.3800, 15.7900],  // Vzhod - Zg. Pristava
+  [46.3780, 15.7850],
+  [46.3760, 15.7900],
+  [46.3740, 15.7950],
+  [46.3720, 15.7980],
+  [46.3700, 15.7950],  // JV - Janski Vrh
+  [46.3680, 15.7900],
+  [46.3650, 15.7820],
+  [46.3620, 15.7750],
+  [46.3600, 15.7700],  // Jug - Kočice
+  [46.3570, 15.7650],
+  [46.3540, 15.7600],
+  [46.3510, 15.7500],
+  [46.3490, 15.7400],  // JZ - Stari Grad
+  [46.3480, 15.7300],
+  [46.3490, 15.7150],
+  [46.3510, 15.7000],
+  [46.3530, 15.6900],  // Zahod - Makole
+  [46.3560, 15.6800],
+  [46.3590, 15.6750],
+  [46.3620, 15.6720],
+  [46.3650, 15.6700],  // SZ - Pečke
+  [46.3690, 15.6720],
+  [46.3720, 15.6780],
+  [46.3750, 15.6850],
+  [46.3780, 15.6900],  // Zahod sredina
+  [46.3810, 15.6950],
+  [46.3840, 15.6980],
+  [46.3870, 15.7000],
+  [46.3910, 15.7020],  // SZ - Plagersko
+  [46.3950, 15.7030],
+  [46.3980, 15.7040],
+  [46.4010, 15.7050],  // Zaključek - nazaj na začetek
+];
+
+// ============================================================
+// TOČKA V POLIGONU - algoritem
+// ============================================================
+function pointInPolygon(lat, lng, polygon) {
+  let inside = false;
+  const n = polygon.length;
+  let j = n - 1;
+  for (let i = 0; i < n; i++) {
+    const xi = polygon[i][1], yi = polygon[i][0];
+    const xj = polygon[j][1], yj = polygon[j][0];
+    const intersect = ((yi > lat) !== (yj > lat)) &&
+      (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+    j = i;
+  }
+  return inside;
+}
+
+// ============================================================
+// MAP SETUP
+// ============================================================
+const map = L.map('map', {
+  zoomControl: true,
+  attributionControl: false,
+});
+
+// OpenStreetMap tiles
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap'
+}).addTo(map);
+
+// Začetni pogled - center Majšperka
+map.setView([46.3740, 15.7350], 12);
+
+// Nariši mejo lovišča
+const boundaryPolygon = L.polygon(BOUNDARY_COORDS, {
+  color: '#4a9fd4',
+  weight: 3,
+  opacity: 0.9,
+  fillColor: '#4a9fd4',
+  fillOpacity: 0.08,
+  dashArray: '8, 4',
+}).addTo(map);
+
+boundaryPolygon.bindPopup('<b>🌲 LD Majšperk 258</b><br>Meja lovišča');
+
+// ============================================================
+// GPS MARKER
+// ============================================================
+const playerIcon = L.divIcon({
+  html: `<div style="
+    width: 20px; height: 20px;
+    background: #f5a623;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    position: relative;
+  ">
+    <div style="
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 6px; height: 6px;
+      background: white;
+      border-radius: 50%;
+    "></div>
+  </div>`,
+  className: '',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+});
+
+let playerMarker = null;
+let accuracyCircle = null;
+let isFollowing = true;
+let lastPosition = null;
+let wasOutside = false;
+
+map.on('dragstart', () => { isFollowing = false; });
+
+// ============================================================
+// GPS TRACKING
+// ============================================================
+function onPosition(pos) {
+  const lat = pos.coords.latitude;
+  const lng = pos.coords.longitude;
+  const acc = pos.coords.accuracy;
+  const alt = pos.coords.altitude;
+
+  lastPosition = { lat, lng, acc, alt };
+
+  // Update marker
+  if (!playerMarker) {
+    playerMarker = L.marker([lat, lng], { icon: playerIcon }).addTo(map);
+    playerMarker.bindPopup('📍 Moja lokacija');
+  } else {
+    playerMarker.setLatLng([lat, lng]);
+  }
+
+  // Accuracy circle
+  if (accuracyCircle) accuracyCircle.remove();
+  accuracyCircle = L.circle([lat, lng], {
+    radius: acc,
+    color: '#f5a623',
+    fillColor: '#f5a623',
+    fillOpacity: 0.08,
+    weight: 1,
+  }).addTo(map);
+
+  // Follow
+  if (isFollowing) map.setView([lat, lng]);
+
+  // Update UI
+  document.getElementById('gps-dot').className = 'active';
+  document.getElementById('gps-text').textContent = 'GPS aktiven';
+  document.getElementById('lat-display').textContent = lat.toFixed(5);
+  document.getElementById('lng-display').textContent = lng.toFixed(5);
+  document.getElementById('acc-display').textContent = `±${Math.round(acc)}m`;
+  document.getElementById('alt-display').textContent = alt ? `${Math.round(alt)}m` : '—';
+
+  // Check boundary
+  const inside = pointInPolygon(lat, lng, BOUNDARY_COORDS);
+  const bs = document.getElementById('boundary-status');
+
+  if (inside) {
+    bs.textContent = '✓ V LOVIŠČU';
+    bs.className = 'inside';
+    wasOutside = false;
+  } else {
+    bs.textContent = '⚠ ZUNAJ MEJE';
+    bs.className = 'outside';
+    if (!wasOutside) {
+      wasOutside = true;
+      showAlert();
+    }
+  }
+}
+
+function onError(err) {
+  document.getElementById('gps-dot').className = 'error';
+  document.getElementById('gps-text').textContent = 'GPS napaka';
+  console.warn('GPS error:', err.message);
+}
+
+// Start GPS
+if ('geolocation' in navigator) {
+  navigator.geolocation.watchPosition(onPosition, onError, {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 2000,
+  });
+} else {
+  document.getElementById('gps-text').textContent = 'GPS ni podprt';
+  document.getElementById('gps-dot').className = 'error';
+}
+
+// ============================================================
+// FUNCTIONS
+// ============================================================
+function centerOnMe() {
+  isFollowing = true;
+  if (lastPosition) {
+    map.setView([lastPosition.lat, lastPosition.lng], 15);
+  }
+}
+
+function showAlert() {
+  document.getElementById('alert-overlay').classList.add('show');
+  // Vibrate if supported
+  if ('vibrate' in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
+}
+
+function dismissAlert() {
+  document.getElementById('alert-overlay').classList.remove('show');
+}
+
+// ============================================================
+// HIDE LOADING
+// ============================================================
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+  }, 1800);
+});
+</script>
+</body>
+</html>
