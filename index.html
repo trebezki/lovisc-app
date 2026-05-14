@@ -280,7 +280,7 @@
     <div class="info-block">
       <span class="info-icon">🎯</span>
       <div class="info-texts">
-        <span class="info-label">Točnost</span>
+        <span class="info-label">Revir</span>
         <span class="info-value" id="acc-display">—</span>
       </div>
     </div>
@@ -420,15 +420,17 @@ function onPosition(pos) {
   document.getElementById('acc-display').textContent = `±${Math.round(acc)}m`;
   document.getElementById('alt-display').textContent = alt ? `${Math.round(alt)}m` : '—';
 
-  // Reverse geocoding - ime kraja
-  if (!lastPos || Math.abs(lat - (lastPos?.lat||0)) > 0.002 || Math.abs(lng - (lastPos?.lng||0)) > 0.002) {
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=sl`, {
-      headers: { 'User-Agent': 'LD-Dravinja-App/1.0' }
-    })
+  // Reverse geocoding - posodobi ko se premaknemo >100m
+  const movedEnough = !lastPos ||
+    Math.abs(lat - (lastPos?.lat||0)) > 0.001 ||
+    Math.abs(lng - (lastPos?.lng||0)) > 0.001;
+
+  if (movedEnough) {
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=sl`)
       .then(r => r.json())
       .then(d => {
         const a = d.address || {};
-        const kraj = a.village || a.hamlet || a.town || a.city || a.municipality || a.county || 'Neznano';
+        const kraj = a.village || a.hamlet || a.suburb || a.town || a.city || a.municipality || '—';
         document.getElementById('pos-display').textContent = kraj;
       }).catch(() => {
         document.getElementById('pos-display').textContent = `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
@@ -447,7 +449,7 @@ function onPosition(pos) {
     }
   }
 
-  if (!weatherLoaded) loadWeather(lat, lng);
+  if (!weatherLat) loadWeather(lat, lng);
 }
 
 function onError() {
@@ -494,28 +496,45 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 10000);
 
-// WEATHER
-let weatherLoaded = false;
+// WEATHER - osveži vsakih 10 minut
+let weatherLat = null, weatherLng = null;
+
+function getWeatherIcon(code) {
+  if (code === 0) return '☀️';
+  if (code <= 2) return '🌤';
+  if (code <= 3) return '☁️';
+  if (code <= 49) return '🌫';
+  if (code <= 59) return '🌦';
+  if (code <= 69) return '🌧';
+  if (code <= 79) return '❄️';
+  if (code <= 89) return '⛈';
+  return '🌩';
+}
+
 async function loadWeather(lat, lng) {
-  weatherLoaded = true;
+  weatherLat = lat; weatherLng = lng;
   try {
     const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode,windspeed_10m&daily=sunrise,sunset&timezone=auto&forecast_days=1`);
     const d = await r.json();
-    const icons = {0:'☀️', 1:'🌤', 2:'🌤', 3:'☁️'};
-    const icon = d.current.weathercode<=3 ? (icons[d.current.weathercode]||'☁️') :
-                 d.current.weathercode<=49 ? '🌫' : d.current.weathercode<=69 ? '🌧' :
-                 d.current.weathercode<=79 ? '❄️' : '⛈';
-    document.getElementById('weather-icon').textContent = icon;
-    document.getElementById('weather-temp').textContent = `${Math.round(d.current.temperature_2m)}°C`;
-    document.getElementById('weather-desc').textContent = `${Math.round(d.current.windspeed_10m)} km/h`;
-    document.getElementById('temp-inline').textContent = `${icon} ${Math.round(d.current.temperature_2m)}°C`;
-    const fmt = t => new Date(t).toLocaleTimeString('sl',{hour:'2-digit',minute:'2-digit'});
+    const icon = getWeatherIcon(d.current.weathercode);
+    const temp = Math.round(d.current.temperature_2m);
+
+    // Vreme v info vrstici
+    document.getElementById('temp-inline').textContent = `${icon} ${temp}°C`;
+
+    // Sončni vzhod/zahod
+    const fmt = t => new Date(t).toLocaleTimeString('sl', {hour:'2-digit', minute:'2-digit'});
     document.getElementById('sunrise-time').textContent = fmt(d.daily.sunrise[0]);
     document.getElementById('sunset-time').textContent = fmt(d.daily.sunset[0]);
   } catch(e) {
-    document.getElementById('weather-desc').textContent = 'Ni podatkov';
+    document.getElementById('temp-inline').textContent = '—';
   }
 }
+
+// Auto-osveži vreme vsakih 10 minut
+setInterval(() => {
+  if (weatherLat) loadWeather(weatherLat, weatherLng);
+}, 10 * 60 * 1000);
 
 function centerOnMe() {
   isFollowing = true;
