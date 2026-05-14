@@ -420,17 +420,16 @@ function onPosition(pos) {
   document.getElementById('acc-display').textContent = `±${Math.round(acc)}m`;
   document.getElementById('alt-display').textContent = alt ? `${Math.round(alt)}m` : '—';
 
-  // Reverse geocoding - posodobi ko se premaknemo >100m
+  // Reverse geocoding - posodobi ko se premaknemo ~100m
   const movedEnough = !lastPos ||
     Math.abs(lat - (lastPos?.lat||0)) > 0.001 ||
     Math.abs(lng - (lastPos?.lng||0)) > 0.001;
 
   if (movedEnough) {
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=sl`)
+    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=sl`)
       .then(r => r.json())
       .then(d => {
-        const a = d.address || {};
-        const kraj = a.village || a.hamlet || a.suburb || a.town || a.city || a.municipality || '—';
+        const kraj = d.locality || d.city || d.principalSubdivision || '—';
         document.getElementById('pos-display').textContent = kraj;
       }).catch(() => {
         document.getElementById('pos-display').textContent = `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
