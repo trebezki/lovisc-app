@@ -280,14 +280,14 @@
     <div class="info-block">
       <span class="info-icon">🎯</span>
       <div class="info-texts">
-        <span class="info-label">Revir</span>
+        <span class="info-label">Točnost</span>
         <span class="info-value" id="acc-display">—</span>
       </div>
     </div>
     <div class="info-block">
-      <span class="info-icon">⛰</span>
+      <span class="info-icon">🗺️</span>
       <div class="info-texts">
-        <span class="info-label">Višina</span>
+        <span class="info-label">Revir</span>
         <span class="info-value" id="alt-display">—</span>
       </div>
     </div>
@@ -403,7 +403,6 @@ map.on('dragstart', ()=>{ isFollowing=false; });
 // GPS
 function onPosition(pos) {
   const {latitude:lat, longitude:lng, accuracy:acc, altitude:alt, speed} = pos.coords;
-  lastPos = {lat, lng};
 
   if (!playerMarker) playerMarker = L.marker([lat,lng],{icon:playerIcon}).addTo(map);
   else playerMarker.setLatLng([lat,lng]);
@@ -420,19 +419,22 @@ function onPosition(pos) {
   document.getElementById('acc-display').textContent = `±${Math.round(acc)}m`;
   document.getElementById('alt-display').textContent = alt ? `${Math.round(alt)}m` : '—';
 
-  // Reverse geocoding - posodobi ko se premaknemo ~100m
+  // Reverse geocoding - preveri PRED posodobitvijo lastPos
   const movedEnough = !lastPos ||
-    Math.abs(lat - (lastPos?.lat||0)) > 0.001 ||
-    Math.abs(lng - (lastPos?.lng||0)) > 0.001;
+    Math.abs(lat - lastPos.lat) > 0.001 ||
+    Math.abs(lng - lastPos.lng) > 0.001;
+
+  // Posodobi lastPos AFTER preverjanja
+  lastPos = {lat, lng};
 
   if (movedEnough) {
     fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=sl`)
       .then(r => r.json())
       .then(d => {
-        const kraj = d.locality || d.city || d.principalSubdivision || '—';
+        const kraj = d.locality || d.localityInfo?.administrative?.[3]?.name || d.city || d.principalSubdivision || '—';
         document.getElementById('pos-display').textContent = kraj;
       }).catch(() => {
-        document.getElementById('pos-display').textContent = `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+        document.getElementById('pos-display').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
       });
   }
 
