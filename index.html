@@ -233,6 +233,9 @@
     </div>
   </div>
   <div id="header-right">
+    <div id="clock-display">
+      <span id="clock-time" style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:0.5px;">—</span>
+    </div>
     <div id="gps-pill">
       <div id="gps-dot"></div>
       <span id="gps-text">GPS...</span>
@@ -260,8 +263,8 @@
     <div class="info-block">
       <span class="info-icon">📍</span>
       <div class="info-texts">
-        <span class="info-label">Položaj</span>
-        <span class="info-value" id="pos-display">—</span>
+        <span class="info-label">Kraj</span>
+        <span class="info-value" id="pos-display" style="font-size:11px;">—</span>
       </div>
     </div>
     <div class="info-block">
@@ -279,10 +282,10 @@
       </div>
     </div>
     <div class="info-block">
-      <span class="info-icon">💨</span>
+      <span class="info-icon">🌡</span>
       <div class="info-texts">
-        <span class="info-label">Hitrost</span>
-        <span class="info-value" id="spd-display">—</span>
+        <span class="info-label">Vreme</span>
+        <span class="info-value" id="temp-inline">—</span>
       </div>
     </div>
   </div>
@@ -370,12 +373,12 @@ function toggleMap() {
 
 // BOUNDARY
 const boundaryGlow = L.polygon(BOUNDARY_COORDS, {
-  color:'#88B04B', weight:10, opacity:0.12, fill:false,
+  color:'#4A9FD4', weight:10, opacity:0.15, fill:false,
 }).addTo(map);
 
 const boundaryPoly = L.polygon(BOUNDARY_COORDS, {
-  color:'#88B04B', weight:2.5, opacity:0.9,
-  fillColor:'#88B04B', fillOpacity:0.07,
+  color:'#4A9FD4', weight:2.5, opacity:0.95,
+  fillColor:'#4A9FD4', fillOpacity:0.07,
 }).addTo(map);
 
 // PLAYER
@@ -408,10 +411,20 @@ function onPosition(pos) {
 
   document.getElementById('gps-dot').className = 'active';
   document.getElementById('gps-text').textContent = 'GPS aktiven';
-  document.getElementById('pos-display').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   document.getElementById('acc-display').textContent = `±${Math.round(acc)}m`;
   document.getElementById('alt-display').textContent = alt ? `${Math.round(alt)}m` : '—';
-  document.getElementById('spd-display').textContent = speed ? `${(speed*3.6).toFixed(1)} km/h` : '0 km/h';
+
+  // Reverse geocoding - ime kraja
+  if (!lastPos || Math.abs(lat - (lastPos?.lat||0)) > 0.002 || Math.abs(lng - (lastPos?.lng||0)) > 0.002) {
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=sl`)
+      .then(r => r.json())
+      .then(d => {
+        const kraj = d.address?.village || d.address?.town || d.address?.city || d.address?.municipality || d.address?.county || 'Neznano';
+        document.getElementById('pos-display').textContent = kraj;
+      }).catch(() => {
+        document.getElementById('pos-display').textContent = `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+      });
+  }
 
   const inside = pointInPolygon(lat, lng, BOUNDARY_COORDS);
   const badge = document.getElementById('boundary-badge');
@@ -437,28 +450,40 @@ navigator.geolocation?.watchPosition(onPosition, onError, {
   enableHighAccuracy:true, timeout:10000, maximumAge:2000
 });
 
-// COMPASS
+// COMPASS - fix: allow retry
 let compassStarted = false;
 function updateHeading(e) {
-  const h = e.webkitCompassHeading ?? (e.alpha!=null ? 360-e.alpha : 0);
+  const h = (e.webkitCompassHeading != null) ? e.webkitCompassHeading : (e.alpha != null ? 360 - e.alpha : 0);
   const el = document.getElementById('player-arrow');
   if (el) el.style.transform = `rotate(${h}deg)`;
 }
 function requestCompass() {
-  if (compassStarted) return;
-  compassStarted = true;
   if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
     DeviceOrientationEvent.requestPermission().then(r => {
-      if (r==='granted') {
+      if (r === 'granted') {
+        window.removeEventListener('deviceorientation', updateHeading, true);
         window.addEventListener('deviceorientation', updateHeading, true);
         document.getElementById('btn-compass').classList.add('active');
+        compassStarted = true;
       }
     }).catch(console.error);
   } else {
+    window.removeEventListener('deviceorientation', updateHeading, true);
     window.addEventListener('deviceorientation', updateHeading, true);
     document.getElementById('btn-compass').classList.add('active');
+    compassStarted = true;
   }
 }
+
+// CLOCK
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock-time').textContent = `${h}:${m}`;
+}
+updateClock();
+setInterval(updateClock, 10000);
 
 // WEATHER
 let weatherLoaded = false;
@@ -474,6 +499,7 @@ async function loadWeather(lat, lng) {
     document.getElementById('weather-icon').textContent = icon;
     document.getElementById('weather-temp').textContent = `${Math.round(d.current.temperature_2m)}°C`;
     document.getElementById('weather-desc').textContent = `${Math.round(d.current.windspeed_10m)} km/h`;
+    document.getElementById('temp-inline').textContent = `${icon} ${Math.round(d.current.temperature_2m)}°C`;
     const fmt = t => new Date(t).toLocaleTimeString('sl',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('sunrise-time').textContent = fmt(d.daily.sunrise[0]);
     document.getElementById('sunset-time').textContent = fmt(d.daily.sunset[0]);
