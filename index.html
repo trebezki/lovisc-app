@@ -5,28 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="LD Majšperk" />
-  <title>LD Majšperk - Lovišče</title>
+  <meta name="apple-mobile-web-app-title" content="LD Dravinja" />
+  <title>LD Dravinja Majšperk</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
     :root {
-      --bg: #1a2e1a;
-      --surface: #1f3a1f;
-      --surface2: #2d5016;
-      --accent: #6aab3a;
-      --accent2: #4a7c2f;
-      --amber: #f5a623;
-      --red: #e74c3c;
-      --text: #f5f0e8;
-      --text-dim: #8aab6a;
-      --border: rgba(106,171,58,0.35);
+      --bg: #0F2A1D;
+      --surface: rgba(15,42,29,0.88);
+      --card: rgba(20,55,35,0.75);
+      --accent: #88B04B;
+      --accent-glow: rgba(136,176,75,0.35);
+      --amber: #D4A843;
+      --alert: #E45757;
+      --text: #F0EDE6;
+      --text-dim: #7A9E7E;
+      --border: rgba(136,176,75,0.2);
+      --blur: blur(14px);
     }
 
     body {
-      font-family: 'Georgia', serif;
+      font-family: 'Inter', -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
       height: 100dvh;
@@ -35,690 +37,463 @@
       overflow: hidden;
     }
 
-    /* HEADER */
-    #header {
-      background: var(--surface);
-      padding: 12px 16px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      z-index: 1000;
-      flex-shrink: 0;
-    }
-
-    #header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    #header-icon {
-      font-size: 28px;
-      line-height: 1;
-    }
-
-    #header-text h1 {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--amber);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    #header-text p {
-      font-size: 10px;
-      color: var(--text-dim);
-      margin-top: 2px;
-      letter-spacing: 0.5px;
-      font-family: 'Georgia', serif;
-      font-style: italic;
-    }
-
-    #header-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    #btn-compass {
-      background: transparent;
-      border: 1.5px solid var(--border);
-      color: var(--text-dim);
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-      padding: 0;
-    }
-
-    #btn-compass:active { transform: scale(0.92); }
-
-    #btn-compass.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: rgba(106,171,58,0.15);
-      box-shadow: 0 0 8px rgba(106,171,58,0.3);
-    }
-
-    #status-badge {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
-    }
-
-    #gps-status {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 10px;
-      color: var(--text-dim);
-    }
-
-    #gps-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #555;
-      transition: background 0.3s;
-    }
-
-    #gps-dot.active { background: var(--accent); animation: pulse 2s infinite; }
-    #gps-dot.error { background: var(--red); }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(1.4); }
-    }
-
-    #boundary-status {
-      font-size: 10px;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-weight: 600;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-    }
-
-    #boundary-status.inside {
-      background: rgba(46,204,113,0.15);
-      color: var(--accent);
-      border: 1px solid rgba(46,204,113,0.4);
-    }
-
-    #boundary-status.outside {
-      background: rgba(231,76,60,0.2);
-      color: #ff6b6b;
-      border: 1px solid rgba(231,76,60,0.5);
-      animation: blink 0.8s infinite;
-    }
-
-    #boundary-status.unknown {
-      background: rgba(255,255,255,0.05);
-      color: var(--text-dim);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    /* MAP */
-    #map {
-      flex: 1;
-      width: 100%;
-      z-index: 1;
-    }
-
-    /* BOTTOM BAR */
-    #bottom-bar {
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      padding: 10px 16px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      z-index: 1000;
-    }
-
-    .info-block {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      min-width: 58px;
-    }
-
-    .info-label {
-      font-size: 8px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .info-value {
-      font-size: 12px;
-      color: var(--text);
-      font-weight: 600;
-    }
-
-    /* CENTER BUTTON */
-    #btn-center, #btn-map-toggle {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
-
-    #btn-center:active, #btn-map-toggle:active {
-      background: var(--accent2);
-      transform: scale(0.93);
-    }
-
-    /* ALERT OVERLAY */
-    #alert-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(231, 76, 60, 0.96);
-      z-index: 9999;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 32px;
-    }
-
-    #alert-overlay.show { display: flex; }
-
-    #alert-overlay .alert-icon { font-size: 72px; }
-    #alert-overlay h2 { font-size: 26px; text-align: center; font-weight: 700; }
-    #alert-overlay p { font-size: 15px; text-align: center; opacity: 0.85; }
-
-    #btn-dismiss {
-      margin-top: 16px;
-      background: white;
-      color: var(--red);
-      border: none;
-      padding: 14px 36px;
-      border-radius: 30px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
     /* LOADING */
     #loading {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: var(--bg);
       z-index: 99999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px;
+    }
+    .load-boar { font-size: 58px; animation: sway 1.6s ease-in-out infinite; }
+    @keyframes sway { 0%,100%{transform:rotate(-6deg)} 50%{transform:rotate(6deg)} }
+    #loading h2 { font-size: 16px; font-weight: 700; color: var(--amber); letter-spacing: 1.5px; }
+    #loading p { font-size: 11px; color: var(--text-dim); }
+    .load-bar { width:150px; height:2px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; margin-top:4px; }
+    .load-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--amber)); animation:fill 1.8s ease-in-out infinite; }
+    @keyframes fill { 0%{width:0%} 100%{width:100%} }
+
+    /* HEADER */
+    #header {
+      position: relative; z-index: 1000;
+      background: var(--surface);
+      backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+      padding: 10px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #header-left { display:flex; align-items:center; gap:10px; }
+    #header-icon { font-size:26px; line-height:1; }
+    #header-text h1 { font-size:13px; font-weight:700; color:var(--amber); }
+    #header-text p { font-size:10px; color:var(--text-dim); font-style:italic; font-family:Georgia,serif; margin-top:1px; }
+    #header-right { display:flex; align-items:center; gap:8px; }
+
+    #gps-pill {
+      display:flex; align-items:center; gap:5px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid var(--border);
+      border-radius:20px; padding:4px 9px;
+      font-size:10px; color:var(--text-dim); font-weight:500;
+    }
+    #gps-dot { width:6px; height:6px; border-radius:50%; background:#555; flex-shrink:0; }
+    #gps-dot.active { background:var(--accent); animation:blink 2s infinite; }
+    #gps-dot.error { background:var(--alert); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    #btn-compass {
+      width:34px; height:34px; border-radius:50%;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.05);
+      color:var(--text-dim);
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:all 0.2s; padding:0;
+    }
+    #btn-compass.active {
+      border-color:var(--accent); color:var(--accent);
+      background:rgba(136,176,75,0.15);
+      box-shadow:0 0 10px var(--accent-glow);
     }
 
-    #loading .load-icon { font-size: 64px; animation: sway 1.5s ease-in-out infinite; }
-
-    @keyframes sway {
-      0%, 100% { transform: rotate(-8deg) scale(1); }
-      50% { transform: rotate(8deg) scale(1.05); }
+    /* FLOATING BOUNDARY BADGE */
+    #boundary-badge {
+      position: absolute; top: 66px; left: 50%; transform: translateX(-50%);
+      z-index: 999;
+      display: none; align-items: center; gap: 6px;
+      background: rgba(228,87,87,0.12);
+      border: 1px solid rgba(228,87,87,0.45);
+      backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+      border-radius: 30px; padding: 6px 14px;
+      font-size: 11px; font-weight: 600; color: #ff8888;
+      white-space: nowrap;
+      animation: pulse-badge 1.8s infinite;
     }
-
-    #loading h2 { font-size: 18px; color: var(--amber); font-weight: 700; letter-spacing: 1px; }
-    #loading p { font-size: 12px; color: var(--text-dim); letter-spacing: 0.5px; }
-
-    .load-bar {
-      width: 180px;
-      height: 3px;
-      background: var(--surface2);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 8px;
+    #boundary-badge.show { display:flex; }
+    @keyframes pulse-badge {
+      0%,100%{box-shadow:0 0 0 0 rgba(228,87,87,0.3)}
+      50%{box-shadow:0 0 0 8px transparent}
     }
+    .badge-dot { width:7px; height:7px; border-radius:50%; background:var(--alert); animation:blink 0.8s infinite; }
 
-    .load-bar-inner {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent2), var(--accent));
-      border-radius: 2px;
-      animation: load 1.8s ease-in-out infinite;
-    }
+    /* MAP */
+    #map { flex:1; width:100%; z-index:1; }
 
-    @keyframes load {
-      0% { width: 0%; }
-      100% { width: 100%; }
-    }
-
-    /* Leaflet */
-    .leaflet-control-zoom {
-      border: 1px solid var(--border) !important;
-      border-radius: 8px !important;
-      overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
-    }
+    /* ZOOM */
+    .leaflet-control-zoom { border:none !important; box-shadow:none !important; }
     .leaflet-control-zoom a {
-      background: var(--surface) !important;
-      color: var(--text) !important;
-      border-color: var(--border) !important;
-      font-weight: 600 !important;
+      width:40px !important; height:40px !important; line-height:40px !important;
+      border-radius:50% !important;
+      background:var(--surface) !important;
+      backdrop-filter:var(--blur) !important; -webkit-backdrop-filter:var(--blur) !important;
+      border:1px solid var(--border) !important;
+      color:var(--text) !important;
+      font-size:18px !important; font-weight:400 !important;
+      margin-bottom:6px !important;
+      box-shadow:0 4px 15px rgba(0,0,0,0.3) !important;
+    }
+
+    /* BOTTOM CARD */
+    #bottom-card {
+      position:relative; z-index:1000;
+      background:var(--surface);
+      backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+      border-top:1px solid var(--border);
+      padding:10px 14px 16px;
+      flex-shrink:0;
+    }
+    #info-row {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .info-block { display:flex; align-items:center; gap:5px; }
+    .info-icon { font-size:13px; opacity:0.7; }
+    .info-texts { display:flex; flex-direction:column; }
+    .info-label { font-size:8px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-weight:500; }
+    .info-value { font-size:12px; font-weight:600; color:var(--text); font-variant-numeric:tabular-nums; }
+
+    #action-row { display:flex; align-items:center; justify-content:space-between; }
+
+    #weather-pill {
+      display:flex; align-items:center; gap:7px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid var(--border);
+      border-radius:20px; padding:6px 11px;
+    }
+    #weather-icon { font-size:16px; }
+    #weather-temp { font-size:13px; font-weight:600; }
+    #weather-desc { font-size:9px; color:var(--text-dim); }
+
+    #btn-group { display:flex; gap:8px; }
+    .btn-action {
+      width:42px; height:42px; border-radius:50%;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.06);
+      color:var(--text); cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition:all 0.15s;
+      box-shadow:0 2px 10px rgba(0,0,0,0.25); padding:0;
+    }
+    .btn-action:active { transform:scale(0.92); background:rgba(136,176,75,0.2); }
+
+    #sun-pill {
+      display:flex; align-items:center; gap:8px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid var(--border);
+      border-radius:20px; padding:6px 11px;
+    }
+    .sun-item { display:flex; align-items:center; gap:3px; }
+    .sun-item span { font-size:12px; }
+    .sun-item b { font-size:11px; font-weight:600; }
+    .sun-divider { width:1px; height:16px; background:var(--border); }
+
+    /* ALERT */
+    #alert-overlay {
+      position:fixed; inset:0;
+      background:rgba(10,30,18,0.93);
+      backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+      z-index:9999;
+      display:none; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:14px; padding:32px;
+    }
+    #alert-overlay.show { display:flex; }
+    .al-icon { font-size:64px; }
+    #alert-overlay h2 { font-size:24px; font-weight:700; text-align:center; color:#ff8080; }
+    #alert-overlay p { font-size:14px; text-align:center; color:var(--text-dim); line-height:1.5; }
+    #btn-dismiss {
+      margin-top:12px; background:var(--alert); color:white;
+      border:none; padding:13px 32px; border-radius:30px;
+      font-size:15px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;
     }
   </style>
 </head>
 <body>
 
-<!-- LOADING SCREEN -->
 <div id="loading">
-  <div class="load-icon">🐗</div>
+  <div class="load-boar">🐗</div>
   <h2>LD DRAVINJA MAJŠPERK</h2>
   <p>Nalaganje zemljevida...</p>
-  <div class="load-bar"><div class="load-bar-inner"></div></div>
+  <div class="load-bar"><div class="load-fill"></div></div>
 </div>
 
-<!-- ALERT: OUTSIDE BOUNDARY -->
 <div id="alert-overlay">
-  <div class="alert-icon">⚠️</div>
+  <div class="al-icon">⚠️</div>
   <h2>Zunaj lovišča!</h2>
-  <p>Zapustil si meje lovišča LD Majšperk 258.</p>
+  <p>Zapustil si meje lovišča<br>LD Dravinja Majšperk.</p>
   <button id="btn-dismiss" onclick="dismissAlert()">Razumem</button>
 </div>
 
-<!-- HEADER -->
 <div id="header">
   <div id="header-left">
     <div id="header-icon">🐗</div>
     <div id="header-text">
-      <h1>LD DRAVINJA MAJŠPERK</h1>
+      <h1>LD Dravinja Majšperk</h1>
       <p>Meja lovišča</p>
     </div>
   </div>
   <div id="header-right">
-    <button id="btn-compass" onclick="requestCompass()" title="Vklopi kompas">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
-        <polygon points="12,4 15,12 12,10 9,12" fill="#f5a623"/>
-        <polygon points="12,20 15,12 12,14 9,12" fill="currentColor" opacity="0.5"/>
-        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+    <div id="gps-pill">
+      <div id="gps-dot"></div>
+      <span id="gps-text">GPS...</span>
+    </div>
+    <button id="btn-compass" onclick="requestCompass()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+        <polygon points="12,4 14.5,12 12,10.5 9.5,12" fill="#D4A843"/>
+        <polygon points="12,20 14.5,12 12,13.5 9.5,12" fill="currentColor" opacity="0.4"/>
+        <circle cx="12" cy="12" r="1.2" fill="currentColor"/>
       </svg>
     </button>
-    <div id="status-badge">
-      <div id="gps-status">
-        <div id="gps-dot"></div>
-        <span id="gps-text">Čakam GPS...</span>
+  </div>
+</div>
+
+<div id="boundary-badge">
+  <div class="badge-dot"></div>
+  Zunaj meje lovišča
+</div>
+
+<div id="map"></div>
+
+<div id="bottom-card">
+  <div id="info-row">
+    <div class="info-block">
+      <span class="info-icon">📍</span>
+      <div class="info-texts">
+        <span class="info-label">Položaj</span>
+        <span class="info-value" id="pos-display">—</span>
       </div>
-      <div id="boundary-status" class="unknown">NEZNAN POLOŽAJ</div>
+    </div>
+    <div class="info-block">
+      <span class="info-icon">🎯</span>
+      <div class="info-texts">
+        <span class="info-label">Točnost</span>
+        <span class="info-value" id="acc-display">—</span>
+      </div>
+    </div>
+    <div class="info-block">
+      <span class="info-icon">⛰</span>
+      <div class="info-texts">
+        <span class="info-label">Višina</span>
+        <span class="info-value" id="alt-display">—</span>
+      </div>
+    </div>
+    <div class="info-block">
+      <span class="info-icon">💨</span>
+      <div class="info-texts">
+        <span class="info-label">Hitrost</span>
+        <span class="info-value" id="spd-display">—</span>
+      </div>
+    </div>
+  </div>
+  <div id="action-row">
+    <div id="weather-pill">
+      <span id="weather-icon">⏳</span>
+      <div>
+        <div id="weather-temp" style="font-size:13px;font-weight:600;">...</div>
+        <div id="weather-desc" style="font-size:9px;color:var(--text-dim);">Nalagam</div>
+      </div>
+    </div>
+    <div id="btn-group">
+      <button class="btn-action" onclick="centerOnMe()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </button>
+      <button class="btn-action" onclick="toggleMap()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M9 4v13M15 7v13" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </button>
+    </div>
+    <div id="sun-pill">
+      <div class="sun-item"><span>🌅</span><b id="sunrise-time">—</b></div>
+      <div class="sun-divider"></div>
+      <div class="sun-item"><span>🌇</span><b id="sunset-time">—</b></div>
     </div>
   </div>
 </div>
 
-<!-- MAP -->
-<div id="map"></div>
-
-<!-- BOTTOM BAR -->
-<div id="bottom-bar">
-  <div class="info-block">
-    <span class="info-label">Širina</span>
-    <span class="info-value" id="lat-display">—</span>
-  </div>
-  <div class="info-block">
-    <span class="info-label">Dolžina</span>
-    <span class="info-value" id="lng-display">—</span>
-  </div>
-  <button id="btn-center" onclick="centerOnMe()" title="Moja lokacija">📍</button>
-  <button id="btn-map-toggle" onclick="toggleMap()" title="Zamenjaj mapo">🛰️</button>
-  <div class="info-block">
-    <span class="info-label">Natančnost</span>
-    <span class="info-value" id="acc-display">—</span>
-  </div>
-  <div class="info-block">
-    <span class="info-label">Nadm. viš.</span>
-    <span class="info-value" id="alt-display">—</span>
-  </div>
-</div>
-
 <script>
-// ============================================================
-// MEJA LOVIŠČA LD MAJŠPERK 258
-// Koordinate določene iz uradne lovske mape
-// Format: [latitude, longitude]
-// ============================================================
+const MAPTILER_KEY = '8MprynDQ4qJMQcD3R5X2';
+
 const BOUNDARY_COORDS = [
-  [46.4010, 15.7050],  // SZ kot - pri Kidričevem
-  [46.4020, 15.7300],
-  [46.4015, 15.7500],
-  [46.4005, 15.7650],
-  [46.3990, 15.7850],  // Sever - Kidričevo območje
-  [46.3970, 15.8000],
-  [46.3950, 15.8100],
-  [46.3920, 15.8150],  // SV - Apače
-  [46.3880, 15.8120],
-  [46.3850, 15.8050],
-  [46.3820, 15.7980],
-  [46.3800, 15.7900],  // Vzhod - Zg. Pristava
-  [46.3780, 15.7850],
-  [46.3760, 15.7900],
-  [46.3740, 15.7950],
-  [46.3720, 15.7980],
-  [46.3700, 15.7950],  // JV - Janski Vrh
-  [46.3680, 15.7900],
-  [46.3650, 15.7820],
-  [46.3620, 15.7750],
-  [46.3600, 15.7700],  // Jug - Kočice
-  [46.3570, 15.7650],
-  [46.3540, 15.7600],
-  [46.3510, 15.7500],
-  [46.3490, 15.7400],  // JZ - Stari Grad
-  [46.3480, 15.7300],
-  [46.3490, 15.7150],
-  [46.3510, 15.7000],
-  [46.3530, 15.6900],  // Zahod - Makole
-  [46.3560, 15.6800],
-  [46.3590, 15.6750],
-  [46.3620, 15.6720],
-  [46.3650, 15.6700],  // SZ - Pečke
-  [46.3690, 15.6720],
-  [46.3720, 15.6780],
-  [46.3750, 15.6850],
-  [46.3780, 15.6900],  // Zahod sredina
-  [46.3810, 15.6950],
-  [46.3840, 15.6980],
-  [46.3870, 15.7000],
-  [46.3910, 15.7020],  // SZ - Plagersko
-  [46.3950, 15.7030],
-  [46.3980, 15.7040],
-  [46.4010, 15.7050],  // Zaključek - nazaj na začetek
+  [46.4010,15.7050],[46.4020,15.7300],[46.4015,15.7500],[46.4005,15.7650],
+  [46.3990,15.7850],[46.3970,15.8000],[46.3950,15.8100],[46.3920,15.8150],
+  [46.3880,15.8120],[46.3850,15.8050],[46.3820,15.7980],[46.3800,15.7900],
+  [46.3780,15.7850],[46.3760,15.7900],[46.3740,15.7950],[46.3720,15.7980],
+  [46.3700,15.7950],[46.3680,15.7900],[46.3650,15.7820],[46.3620,15.7750],
+  [46.3600,15.7700],[46.3570,15.7650],[46.3540,15.7600],[46.3510,15.7500],
+  [46.3490,15.7400],[46.3480,15.7300],[46.3490,15.7150],[46.3510,15.7000],
+  [46.3530,15.6900],[46.3560,15.6800],[46.3590,15.6750],[46.3620,15.6720],
+  [46.3650,15.6700],[46.3690,15.6720],[46.3720,15.6780],[46.3750,15.6850],
+  [46.3780,15.6900],[46.3810,15.6950],[46.3840,15.6980],[46.3870,15.7000],
+  [46.3910,15.7020],[46.3950,15.7030],[46.3980,15.7040],[46.4010,15.7050],
 ];
 
-// ============================================================
-// TOČKA V POLIGONU - algoritem
-// ============================================================
-function pointInPolygon(lat, lng, polygon) {
-  let inside = false;
-  const n = polygon.length;
-  let j = n - 1;
-  for (let i = 0; i < n; i++) {
-    const xi = polygon[i][1], yi = polygon[i][0];
-    const xj = polygon[j][1], yj = polygon[j][0];
-    const intersect = ((yi > lat) !== (yj > lat)) &&
-      (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
-    if (intersect) inside = !inside;
-    j = i;
+function pointInPolygon(lat, lng, poly) {
+  let inside = false, n = poly.length, j = n-1;
+  for (let i=0; i<n; i++) {
+    const [yi,xi] = poly[i], [yj,xj] = poly[j];
+    if (((yi>lat)!==(yj>lat)) && (lng<(xj-xi)*(lat-yi)/(yj-yi)+xi)) inside=!inside;
+    j=i;
   }
   return inside;
 }
 
-// ============================================================
-// MAP SETUP
-// ============================================================
-const map = L.map('map', {
-  zoomControl: true,
-  attributionControl: false,
-  preferCanvas: true,
-  zoomAnimation: true,
-  fadeAnimation: true,
-  markerZoomAnimation: true,
-});
-
-// MapTiler satelit - hiter, smooth
-const MAPTILER_KEY = '8MprynDQ4qJMQcD3R5X2';
-
-L.tileLayer(`https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-  maxZoom: 20,
-  minZoom: 8,
-  attribution: '© MapTiler',
-  keepBuffer: 6,
-  updateWhenIdle: false,
-  updateWhenZooming: false,
-  crossOrigin: true,
-}).addTo(map);
-
-// Začetni pogled - center Majšperka
+// MAP
+const map = L.map('map', { zoomControl:true, attributionControl:false, preferCanvas:true });
 map.setView([46.3740, 15.7350], 12);
 
-// Nariši mejo lovišča
-const boundaryPolygon = L.polygon(BOUNDARY_COORDS, {
-  color: '#4a9fd4',
-  weight: 3,
-  opacity: 0.9,
-  fillColor: '#4a9fd4',
-  fillOpacity: 0.08,
-  dashArray: '8, 4',
+const satLayer = L.tileLayer(
+  `https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`,
+  { maxZoom:20, minZoom:8, keepBuffer:6, crossOrigin:true }
+).addTo(map);
+
+const mapLayer = L.tileLayer(
+  `https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`,
+  { maxZoom:20, minZoom:8, keepBuffer:6, crossOrigin:true }
+);
+
+let isSatellite = true;
+function toggleMap() {
+  map.eachLayer(l => { if (l instanceof L.TileLayer) map.removeLayer(l); });
+  if (isSatellite) { mapLayer.addTo(map); isSatellite=false; }
+  else { satLayer.addTo(map); isSatellite=true; }
+  boundaryGlow.bringToFront();
+  boundaryPoly.bringToFront();
+  if (playerMarker) playerMarker.bringToFront();
+}
+
+// BOUNDARY
+const boundaryGlow = L.polygon(BOUNDARY_COORDS, {
+  color:'#88B04B', weight:10, opacity:0.12, fill:false,
 }).addTo(map);
 
-boundaryPolygon.bindPopup('<b>🌲 LD Majšperk 258</b><br>Meja lovišča');
+const boundaryPoly = L.polygon(BOUNDARY_COORDS, {
+  color:'#88B04B', weight:2.5, opacity:0.9,
+  fillColor:'#88B04B', fillOpacity:0.07,
+}).addTo(map);
 
-// ============================================================
-// GPS MARKER
-// ============================================================
+// PLAYER
 const playerIcon = L.divIcon({
-  html: `<div id="player-arrow" style="
-    width: 28px;
-    height: 28px;
-    position: relative;
-    transform-origin: center center;
-  ">
-    <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="14,2 22,24 14,20 6,24" fill="#f5a623" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+  html:`<div id="player-arrow" style="width:28px;height:28px;transform-origin:center center;">
+    <svg width="28" height="28" viewBox="0 0 28 28">
+      <polygon points="14,2 22,24 14,20 6,24" fill="#D4A843" stroke="white" stroke-width="2" stroke-linejoin="round"/>
     </svg>
   </div>`,
-  className: '',
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
+  className:'', iconSize:[28,28], iconAnchor:[14,14],
 });
 
-// Kompas
-let currentHeading = 0;
-let compassStarted = false;
+let playerMarker=null, accuracyCircle=null, isFollowing=true, lastPos=null, wasOutside=false;
+map.on('dragstart', ()=>{ isFollowing=false; });
 
-function updateHeading(event) {
-  let heading = 0;
-  if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
-    heading = event.webkitCompassHeading;
-  } else if (event.alpha !== null) {
-    heading = 360 - event.alpha;
+// GPS
+function onPosition(pos) {
+  const {latitude:lat, longitude:lng, accuracy:acc, altitude:alt, speed} = pos.coords;
+  lastPos = {lat, lng};
+
+  if (!playerMarker) playerMarker = L.marker([lat,lng],{icon:playerIcon}).addTo(map);
+  else playerMarker.setLatLng([lat,lng]);
+
+  if (accuracyCircle) accuracyCircle.remove();
+  accuracyCircle = L.circle([lat,lng],{
+    radius:acc, color:'#D4A843', fillColor:'#D4A843', fillOpacity:0.05, weight:1
+  }).addTo(map);
+
+  if (isFollowing) map.setView([lat,lng]);
+
+  document.getElementById('gps-dot').className = 'active';
+  document.getElementById('gps-text').textContent = 'GPS aktiven';
+  document.getElementById('pos-display').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  document.getElementById('acc-display').textContent = `±${Math.round(acc)}m`;
+  document.getElementById('alt-display').textContent = alt ? `${Math.round(alt)}m` : '—';
+  document.getElementById('spd-display').textContent = speed ? `${(speed*3.6).toFixed(1)} km/h` : '0 km/h';
+
+  const inside = pointInPolygon(lat, lng, BOUNDARY_COORDS);
+  const badge = document.getElementById('boundary-badge');
+  if (inside) { badge.classList.remove('show'); wasOutside=false; }
+  else {
+    badge.classList.add('show');
+    if (!wasOutside) {
+      wasOutside=true;
+      document.getElementById('alert-overlay').classList.add('show');
+      if ('vibrate' in navigator) navigator.vibrate([500,200,500]);
+    }
   }
-  currentHeading = heading;
-  const arrow = document.getElementById('player-arrow');
-  if (arrow) arrow.style.transform = `rotate(${heading}deg)`;
+
+  if (!weatherLoaded) loadWeather(lat, lng);
 }
 
-function startCompass() {
+function onError() {
+  document.getElementById('gps-dot').className='error';
+  document.getElementById('gps-text').textContent='GPS napaka';
+}
+
+navigator.geolocation?.watchPosition(onPosition, onError, {
+  enableHighAccuracy:true, timeout:10000, maximumAge:2000
+});
+
+// COMPASS
+let compassStarted = false;
+function updateHeading(e) {
+  const h = e.webkitCompassHeading ?? (e.alpha!=null ? 360-e.alpha : 0);
+  const el = document.getElementById('player-arrow');
+  if (el) el.style.transform = `rotate(${h}deg)`;
+}
+function requestCompass() {
   if (compassStarted) return;
   compassStarted = true;
-  if (typeof DeviceOrientationEvent !== 'undefined' &&
-      typeof DeviceOrientationEvent.requestPermission === 'function') {
-    // iOS 13+ - mora biti klicano po user gesture
-    DeviceOrientationEvent.requestPermission()
-      .then(response => {
-        if (response === 'granted') {
-          window.addEventListener('deviceorientation', updateHeading, true);
-        }
-      }).catch(console.error);
-  } else {
-    // Android / ostali
-    window.addEventListener('deviceorientation', updateHeading, true);
-  }
-}
-
-function requestCompass() {
-  if (typeof DeviceOrientationEvent !== 'undefined' &&
-      typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission()
-      .then(response => {
-        if (response === 'granted') {
-          window.addEventListener('deviceorientation', updateHeading, true);
-          document.getElementById('btn-compass').classList.add('active');
-        }
-      }).catch(console.error);
+  if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().then(r => {
+      if (r==='granted') {
+        window.addEventListener('deviceorientation', updateHeading, true);
+        document.getElementById('btn-compass').classList.add('active');
+      }
+    }).catch(console.error);
   } else {
     window.addEventListener('deviceorientation', updateHeading, true);
     document.getElementById('btn-compass').classList.add('active');
   }
 }
 
-// Kompas se zažene ob prvem dotiku (iOS zahteva user gesture)
-document.addEventListener('touchstart', () => { startCompass(); }, { once: true });
-document.addEventListener('click', () => { startCompass(); }, { once: true });
-
-let playerMarker = null;
-let accuracyCircle = null;
-let isFollowing = true;
-let lastPosition = null;
-let wasOutside = false;
-
-map.on('dragstart', () => { isFollowing = false; });
-
-// ============================================================
-// GPS TRACKING
-// ============================================================
-function onPosition(pos) {
-  const lat = pos.coords.latitude;
-  const lng = pos.coords.longitude;
-  const acc = pos.coords.accuracy;
-  const alt = pos.coords.altitude;
-
-  lastPosition = { lat, lng, acc, alt };
-
-  // Update marker
-  if (!playerMarker) {
-    playerMarker = L.marker([lat, lng], { icon: playerIcon }).addTo(map);
-    playerMarker.bindPopup('📍 Moja lokacija');
-  } else {
-    playerMarker.setLatLng([lat, lng]);
-  }
-
-  // Accuracy circle
-  if (accuracyCircle) accuracyCircle.remove();
-  accuracyCircle = L.circle([lat, lng], {
-    radius: acc,
-    color: '#f5a623',
-    fillColor: '#f5a623',
-    fillOpacity: 0.08,
-    weight: 1,
-  }).addTo(map);
-
-  // Follow
-  if (isFollowing) map.setView([lat, lng]);
-
-  // Update UI
-  document.getElementById('gps-dot').className = 'active';
-  document.getElementById('gps-text').textContent = 'GPS aktiven';
-  document.getElementById('lat-display').textContent = lat.toFixed(5);
-  document.getElementById('lng-display').textContent = lng.toFixed(5);
-  document.getElementById('acc-display').textContent = `±${Math.round(acc)}m`;
-  document.getElementById('alt-display').textContent = alt ? `${Math.round(alt)}m` : '—';
-
-  // Check boundary
-  const inside = pointInPolygon(lat, lng, BOUNDARY_COORDS);
-  const bs = document.getElementById('boundary-status');
-
-  if (inside) {
-    bs.textContent = '✓ V LOVIŠČU';
-    bs.className = 'inside';
-    wasOutside = false;
-  } else {
-    bs.textContent = '⚠ ZUNAJ MEJE';
-    bs.className = 'outside';
-    if (!wasOutside) {
-      wasOutside = true;
-      showAlert();
-    }
+// WEATHER
+let weatherLoaded = false;
+async function loadWeather(lat, lng) {
+  weatherLoaded = true;
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode,windspeed_10m&daily=sunrise,sunset&timezone=auto&forecast_days=1`);
+    const d = await r.json();
+    const icons = {0:'☀️', 1:'🌤', 2:'🌤', 3:'☁️'};
+    const icon = d.current.weathercode<=3 ? (icons[d.current.weathercode]||'☁️') :
+                 d.current.weathercode<=49 ? '🌫' : d.current.weathercode<=69 ? '🌧' :
+                 d.current.weathercode<=79 ? '❄️' : '⛈';
+    document.getElementById('weather-icon').textContent = icon;
+    document.getElementById('weather-temp').textContent = `${Math.round(d.current.temperature_2m)}°C`;
+    document.getElementById('weather-desc').textContent = `${Math.round(d.current.windspeed_10m)} km/h`;
+    const fmt = t => new Date(t).toLocaleTimeString('sl',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('sunrise-time').textContent = fmt(d.daily.sunrise[0]);
+    document.getElementById('sunset-time').textContent = fmt(d.daily.sunset[0]);
+  } catch(e) {
+    document.getElementById('weather-desc').textContent = 'Ni podatkov';
   }
 }
 
-function onError(err) {
-  document.getElementById('gps-dot').className = 'error';
-  document.getElementById('gps-text').textContent = 'GPS napaka';
-  console.warn('GPS error:', err.message);
-}
-
-// Start GPS
-if ('geolocation' in navigator) {
-  navigator.geolocation.watchPosition(onPosition, onError, {
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 2000,
-  });
-} else {
-  document.getElementById('gps-text').textContent = 'GPS ni podprt';
-  document.getElementById('gps-dot').className = 'error';
-}
-
-// ============================================================
-// FUNCTIONS
-// ============================================================
-// ============================================================
-// MAP TOGGLE
-// ============================================================
-let isSatellite = true;
-
-const satelliteLayer = L.tileLayer(`https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-  maxZoom: 20, minZoom: 8, keepBuffer: 6, crossOrigin: true,
-  updateWhenIdle: false, updateWhenZooming: false,
-});
-
-const normalLayer = L.tileLayer(`https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, {
-  maxZoom: 20, minZoom: 8, keepBuffer: 6, crossOrigin: true,
-  updateWhenIdle: false, updateWhenZooming: false,
-});
-
-function toggleMap() {
-  if (isSatellite) {
-    map.eachLayer(layer => { if (layer instanceof L.TileLayer) map.removeLayer(layer); });
-    normalLayer.addTo(map);
-    document.getElementById('btn-map-toggle').textContent = '🛰️';
-    isSatellite = false;
-  } else {
-    map.eachLayer(layer => { if (layer instanceof L.TileLayer) map.removeLayer(layer); });
-    satelliteLayer.addTo(map);
-    document.getElementById('btn-map-toggle').textContent = '🗺️';
-    isSatellite = true;
-  }
-  boundaryPolygon.bringToFront();
-  if (playerMarker) playerMarker.bringToFront();
-}
 function centerOnMe() {
   isFollowing = true;
-  if (lastPosition) {
-    map.setView([lastPosition.lat, lastPosition.lng], 15);
-  }
-}
-
-function showAlert() {
-  document.getElementById('alert-overlay').classList.add('show');
-  // Vibrate if supported
-  if ('vibrate' in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
+  if (lastPos) map.setView([lastPos.lat, lastPos.lng], 15);
 }
 
 function dismissAlert() {
   document.getElementById('alert-overlay').classList.remove('show');
 }
 
-// ============================================================
-// HIDE LOADING + AUTO KOMPAS
-// ============================================================
 window.addEventListener('load', () => {
   setTimeout(() => {
-    const loading = document.getElementById('loading');
-    loading.style.display = 'none';
-    // Takoj zahtevaj kompas - loading screen je bil "user gesture"
+    document.getElementById('loading').style.display = 'none';
     requestCompass();
   }, 1800);
 });
