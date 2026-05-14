@@ -428,10 +428,13 @@ function onPosition(pos) {
   lastPos = {lat, lng};
 
   if (movedEnough) {
-    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=sl`)
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`, {
+      headers: { 'Accept-Language': 'sl' }
+    })
       .then(r => r.json())
       .then(d => {
-        const kraj = d.locality || d.localityInfo?.administrative?.[3]?.name || d.city || d.principalSubdivision || '—';
+        const a = d.address || {};
+        const kraj = a.hamlet || a.village || a.suburb || a.quarter || a.neighbourhood || a.town || a.city || a.municipality || '—';
         document.getElementById('pos-display').textContent = kraj;
       }).catch(() => {
         document.getElementById('pos-display').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
