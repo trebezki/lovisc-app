@@ -154,6 +154,19 @@
 
     #action-row { display:flex; align-items:center; justify-content:space-between; }
 
+    #clock-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #clock-time {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 1px;
+      line-height: 1;
+    }
+
     #weather-pill {
       display:flex; align-items:center; gap:7px;
       background:rgba(255,255,255,0.05);
@@ -233,9 +246,6 @@
     </div>
   </div>
   <div id="header-right">
-    <div id="clock-display">
-      <span id="clock-time" style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:0.5px;">—</span>
-    </div>
     <div id="gps-pill">
       <div id="gps-dot"></div>
       <span id="gps-text">GPS...</span>
@@ -290,13 +300,6 @@
     </div>
   </div>
   <div id="action-row">
-    <div id="weather-pill">
-      <span id="weather-icon">⏳</span>
-      <div>
-        <div id="weather-temp" style="font-size:13px;font-weight:600;">...</div>
-        <div id="weather-desc" style="font-size:9px;color:var(--text-dim);">Nalagam</div>
-      </div>
-    </div>
     <div id="btn-group">
       <button class="btn-action" onclick="centerOnMe()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -311,6 +314,9 @@
           <path d="M9 4v13M15 7v13" stroke="currentColor" stroke-width="1.5"/>
         </svg>
       </button>
+    </div>
+    <div id="clock-center">
+      <span id="clock-time">—</span>
     </div>
     <div id="sun-pill">
       <div class="sun-item"><span>🌅</span><b id="sunrise-time">—</b></div>
@@ -416,10 +422,13 @@ function onPosition(pos) {
 
   // Reverse geocoding - ime kraja
   if (!lastPos || Math.abs(lat - (lastPos?.lat||0)) > 0.002 || Math.abs(lng - (lastPos?.lng||0)) > 0.002) {
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=sl`)
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=sl`, {
+      headers: { 'User-Agent': 'LD-Dravinja-App/1.0' }
+    })
       .then(r => r.json())
       .then(d => {
-        const kraj = d.address?.village || d.address?.town || d.address?.city || d.address?.municipality || d.address?.county || 'Neznano';
+        const a = d.address || {};
+        const kraj = a.village || a.hamlet || a.town || a.city || a.municipality || a.county || 'Neznano';
         document.getElementById('pos-display').textContent = kraj;
       }).catch(() => {
         document.getElementById('pos-display').textContent = `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
