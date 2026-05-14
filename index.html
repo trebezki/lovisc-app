@@ -75,11 +75,41 @@
       font-style: italic;
     }
 
+    #header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #btn-compass {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text-dim);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      padding: 0;
+    }
+
+    #btn-compass:active { transform: scale(0.92); }
+
+    #btn-compass.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(106,171,58,0.15);
+      box-shadow: 0 0 8px rgba(106,171,58,0.3);
+    }
+
     #status-badge {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 3px;
+      gap: 4px;
     }
 
     #gps-status {
@@ -319,12 +349,22 @@
       <p>Meja lovišča</p>
     </div>
   </div>
-  <div id="status-badge">
-    <div id="gps-status">
-      <div id="gps-dot"></div>
-      <span id="gps-text">Čakam GPS...</span>
+  <div id="header-right">
+    <button id="btn-compass" onclick="requestCompass()" title="Vklopi kompas">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+        <polygon points="12,4 15,12 12,10 9,12" fill="#f5a623"/>
+        <polygon points="12,20 15,12 12,14 9,12" fill="currentColor" opacity="0.5"/>
+        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+      </svg>
+    </button>
+    <div id="status-badge">
+      <div id="gps-status">
+        <div id="gps-dot"></div>
+        <span id="gps-text">Čakam GPS...</span>
+      </div>
+      <div id="boundary-status" class="unknown">NEZNAN POLOŽAJ</div>
     </div>
-    <div id="boundary-status" class="unknown">NEZNAN POLOŽAJ</div>
   </div>
 </div>
 
@@ -343,7 +383,6 @@
   </div>
   <button id="btn-center" onclick="centerOnMe()" title="Moja lokacija">📍</button>
   <button id="btn-map-toggle" onclick="toggleMap()" title="Zamenjaj mapo">🛰️</button>
-  <button id="btn-compass" onclick="requestCompass()" title="Vklopi kompas">🧭</button>
   <div class="info-block">
     <span class="info-label">Natančnost</span>
     <span class="info-value" id="acc-display">—</span>
@@ -521,22 +560,16 @@ function startCompass() {
 function requestCompass() {
   if (typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function') {
-    // iOS 13+
     DeviceOrientationEvent.requestPermission()
       .then(response => {
         if (response === 'granted') {
           window.addEventListener('deviceorientation', updateHeading, true);
-          document.getElementById('btn-compass').textContent = '✅';
-        } else {
-          alert('Dovoljenje za kompas zavrnjeno!');
+          document.getElementById('btn-compass').classList.add('active');
         }
-      }).catch(e => {
-        alert('Napaka kompasa: ' + e);
-      });
+      }).catch(console.error);
   } else {
-    // Android - ne rabi dovoljenja
     window.addEventListener('deviceorientation', updateHeading, true);
-    document.getElementById('btn-compass').textContent = '✅';
+    document.getElementById('btn-compass').classList.add('active');
   }
 }
 
@@ -679,11 +712,14 @@ function dismissAlert() {
 }
 
 // ============================================================
-// HIDE LOADING
+// HIDE LOADING + AUTO KOMPAS
 // ============================================================
 window.addEventListener('load', () => {
   setTimeout(() => {
-    document.getElementById('loading').style.display = 'none';
+    const loading = document.getElementById('loading');
+    loading.style.display = 'none';
+    // Takoj zahtevaj kompas - loading screen je bil "user gesture"
+    requestCompass();
   }, 1800);
 });
 </script>
