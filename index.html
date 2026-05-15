@@ -118,6 +118,11 @@
     /* MAP */
     #map { flex:1; width:100%; z-index:1; }
 
+    /* iOS Safari fix za touch */
+    html, body { overscroll-behavior: none; }
+    .leaflet-container { cursor: grab; }
+    .leaflet-container:active { cursor: grabbing; }
+
     /* FAB in type-bar ne blokirata mape */
     #boundary-badge { pointer-events: none; }
 
@@ -145,6 +150,7 @@
       align-items: center;
       gap: 10px;
       width: 46px;
+      height: fit-content;
       pointer-events: none;
     }
     #fab-wrap > * { pointer-events: auto; }
@@ -446,8 +452,8 @@
   Zunaj meje lovišča
 </div>
 
-<!-- MAP -->
-<div id="map"></div>
+<!-- MAP + floating elements -->
+<div id="map">
 
 <!-- MARKER FAB MENU -->
 <div id="fab-wrap">
@@ -541,6 +547,8 @@
   </div>
   <button id="info-delete" onclick="deleteMarker()">🗑 Izbriši</button>
 </div>
+
+</div><!-- end #map -->
 
 <!-- BOTTOM CARD -->
 <div id="bottom-card">
