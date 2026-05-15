@@ -116,15 +116,17 @@
     .badge-dot { width:7px; height:7px; border-radius:50%; background:var(--alert); animation:blink 0.8s infinite; }
 
     /* MAP */
-    #map {
-      flex:1; width:100%; z-index:1;
+    #map { flex:1; width:100%; z-index:1; }
+    .leaflet-container {
+      touch-action: none !important;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .leaflet-drag-target {
+      touch-action: none !important;
     }
 
-    /* FAB ne sme blokirati mape */
-    #fab-wrap { pointer-events: none; }
-    #fab-wrap * { pointer-events: auto; }
-    #type-bar { pointer-events: none; }
-    #type-bar * { pointer-events: auto; }
+    /* FAB in type-bar ne blokirata mape */
     #boundary-badge { pointer-events: none; }
 
     /* ZOOM */
@@ -150,7 +152,10 @@
       flex-direction: column;
       align-items: center;
       gap: 10px;
+      width: 46px;
+      pointer-events: none;
     }
+    #fab-wrap > * { pointer-events: auto; }
 
     #fab-main {
       width: 46px; height: 46px; border-radius: 50%;
@@ -217,6 +222,7 @@
       box-shadow: 0 4px 18px rgba(0,0,0,0.5);
       backdrop-filter: var(--blur);
       white-space: nowrap;
+      pointer-events: auto;
     }
     #type-bar.show { display: flex; }
     #type-bar-inner {
@@ -640,12 +646,17 @@ const map = L.map('map', {
   inertia: true,
   inertiaDeceleration: 3000,
   inertiaMaxSpeed: 3000,
-  tap: false,
+  tap: true,
+  tapTolerance: 15,
   touchZoom: true,
   scrollWheelZoom: true,
   bounceAtZoomLimits: false,
 });
 map.setView([46.3740, 15.7350], 12);
+
+// iOS drag fix
+map.dragging.enable();
+if (map.tap) map.tap.enable();
 
 const satLayer = L.tileLayer(
   `https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`,
