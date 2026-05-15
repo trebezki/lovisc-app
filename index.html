@@ -655,8 +655,24 @@ const playerIcon = L.divIcon({
   className:'', iconSize:[28,28], iconAnchor:[14,14],
 });
 
-let playerMarker=null, accuracyCircle=null, isFollowing=true, lastPos=null, wasOutside=false;
-map.on('dragstart', ()=>{ isFollowing=false; });
+let playerMarker=null, accuracyCircle=null, lastPos=null, wasOutside=false;
+
+let isFollowing = true;
+let followTimer = null;
+map.on('dragstart', () => {
+  isFollowing = false;
+  // Pokaži gumb za vrnitev sledenja
+  document.getElementById('btn-center').style.borderColor = 'var(--amber)';
+  document.getElementById('btn-center').style.color = 'var(--amber)';
+  // Po 8 sekundah brez dotika - avtomatsko vklopi sledenje nazaj
+  clearTimeout(followTimer);
+  followTimer = setTimeout(() => {
+    isFollowing = true;
+    document.getElementById('btn-center').style.borderColor = '';
+    document.getElementById('btn-center').style.color = '';
+    if (lastPos) map.setView([lastPos.lat, lastPos.lng], map.getZoom());
+  }, 8000);
+});
 
 function onPosition(pos) {
   const {latitude:lat, longitude:lng, accuracy:acc, altitude:alt} = pos.coords;
@@ -744,7 +760,13 @@ async function loadWeather(lat,lng) {
 }
 setInterval(()=>{if(weatherLat)loadWeather(weatherLat,weatherLng);},10*60*1000);
 
-function centerOnMe() { isFollowing=true; if(lastPos)map.setView([lastPos.lat,lastPos.lng],15); }
+function centerOnMe() {
+  isFollowing = true;
+  clearTimeout(followTimer);
+  document.getElementById('btn-center').style.borderColor = '';
+  document.getElementById('btn-center').style.color = '';
+  if (lastPos) map.setView([lastPos.lat, lastPos.lng], 16);
+}
 function dismissAlert() { document.getElementById('alert-overlay').classList.remove('show'); }
 
 // ══════════════════════════════════════════
