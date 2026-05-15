@@ -115,10 +115,9 @@
     }
     .badge-dot { width:7px; height:7px; border-radius:50%; background:var(--alert); animation:blink 0.8s infinite; }
 
-    /* MAP touch fix */
+    /* MAP */
     #map {
       flex:1; width:100%; z-index:1;
-      touch-action: pan-x pan-y pinch-zoom;
     }
 
     /* FAB ne sme blokirati mape */
@@ -637,12 +636,13 @@ const map = L.map('map', {
   zoomAnimation: true,
   fadeAnimation: true,
   markerZoomAnimation: true,
+  dragging: true,
   inertia: true,
   inertiaDeceleration: 3000,
   inertiaMaxSpeed: 3000,
-  tap: true,
-  tapTolerance: 15,
+  tap: false,
   touchZoom: true,
+  scrollWheelZoom: true,
   bounceAtZoomLimits: false,
 });
 map.setView([46.3740, 15.7350], 12);
