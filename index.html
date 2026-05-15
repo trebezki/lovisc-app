@@ -796,6 +796,19 @@ let savedMarkers = [];
 let activeIdx = null;
 let pendingPhoto = null;
 
+let activeFilter = null; // kateri tip je trenutno prikazan
+
+function showOnlyType(type) {
+  savedMarkers.forEach(m => {
+    if (m.type === type) m.lm.addTo(map);
+    else map.removeLayer(m.lm);
+  });
+}
+
+function hideAllMarkers() {
+  savedMarkers.forEach(m => map.removeLayer(m.lm));
+}
+
 function toggleFab() {
   fabOpen = !fabOpen;
   document.getElementById('fab-items').classList.toggle('open', fabOpen);
@@ -803,13 +816,27 @@ function toggleFab() {
   document.getElementById('fab-icon-menu').style.display = fabOpen ? 'none' : 'block';
   document.getElementById('fab-icon-close').style.display = fabOpen ? 'block' : 'none';
   if (!fabOpen) {
+    // X stisnen - skrij vse
     document.getElementById('type-bar').classList.remove('show');
     document.querySelectorAll('.fab-item').forEach(b => b.classList.remove('active'));
     selType = null;
+    activeFilter = null;
+    hideAllMarkers();
   }
 }
 
 function selectType(type) {
+  // Če klikneš isti tip ponovno - toggle off
+  if (activeFilter === type) {
+    activeFilter = null;
+    selType = null;
+    document.querySelectorAll('.fab-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('type-bar').classList.remove('show');
+    hideAllMarkers();
+    return;
+  }
+
+  activeFilter = type;
   selType = type;
   const cfg = markerCfg[type];
   document.querySelectorAll('.fab-item').forEach(b => b.classList.remove('active'));
@@ -817,6 +844,9 @@ function selectType(type) {
   document.getElementById('type-bar-icon').innerHTML = cfg.svg.replace('stroke="white"', `stroke="${cfg.color}"`);
   document.getElementById('type-bar-label').textContent = cfg.label;
   document.getElementById('type-bar').classList.add('show');
+
+  // Pokaži samo ta tip
+  showOnlyType(type);
 }
 
 function addMarkerNow() {
@@ -869,10 +899,15 @@ function confirmSave() {
   const lm = L.marker([lat,lng], {icon:ico}).addTo(map);
   lm.on('click', () => openInfo(idx));
 
-  savedMarkers.push({ type:selType, label:cfg.label, svg:cfg.svg, color:cfg.color, emoji:cfg.emoji, name, lat, lng, photo:pendingPhoto, lm });
+  const savedType = selType;
+  savedMarkers.push({ type:savedType, label:cfg.label, svg:cfg.svg, color:cfg.color, emoji:cfg.emoji, name, lat, lng, photo:pendingPhoto, lm });
+
+  // Skrij takoj - vidni so samo ko je filter aktiven
+  map.removeLayer(lm);
 
   closeSavePopup();
-  toggleFab(); // Zapri FAB
+  // Ostani v filtru tega tipa
+  showOnlyType(savedType);
 }
 
 // INFO PANEL
@@ -919,6 +954,8 @@ function deleteMarker() {
     m.lm.on('click', () => openInfo(i));
   });
   closeInfo();
+  // Osveži filter
+  if (activeFilter) showOnlyType(activeFilter);
 }
 
 // INIT
