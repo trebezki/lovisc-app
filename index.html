@@ -115,8 +115,18 @@
     }
     .badge-dot { width:7px; height:7px; border-radius:50%; background:var(--alert); animation:blink 0.8s infinite; }
 
-    /* MAP */
-    #map { flex:1; width:100%; z-index:1; }
+    /* MAP touch fix */
+    #map {
+      flex:1; width:100%; z-index:1;
+      touch-action: pan-x pan-y pinch-zoom;
+    }
+
+    /* FAB ne sme blokirati mape */
+    #fab-wrap { pointer-events: none; }
+    #fab-wrap * { pointer-events: auto; }
+    #type-bar { pointer-events: none; }
+    #type-bar * { pointer-events: auto; }
+    #boundary-badge { pointer-events: none; }
 
     /* ZOOM */
     .leaflet-control-zoom { border:none !important; box-shadow:none !important; }
@@ -620,7 +630,21 @@ function pointInPolygon(lat, lng, poly) {
 }
 
 // MAP
-const map = L.map('map', { zoomControl:true, attributionControl:false, preferCanvas:true });
+const map = L.map('map', {
+  zoomControl: true,
+  attributionControl: false,
+  preferCanvas: true,
+  zoomAnimation: true,
+  fadeAnimation: true,
+  markerZoomAnimation: true,
+  inertia: true,
+  inertiaDeceleration: 3000,
+  inertiaMaxSpeed: 3000,
+  tap: true,
+  tapTolerance: 15,
+  touchZoom: true,
+  bounceAtZoomLimits: false,
+});
 map.setView([46.3740, 15.7350], 12);
 
 const satLayer = L.tileLayer(
@@ -647,7 +671,7 @@ const boundaryPoly = L.polygon(BOUNDARY_COORDS, { color:'#4A9FD4', weight:2.5, o
 
 // PLAYER
 const playerIcon = L.divIcon({
-  html:`<div id="player-arrow" style="width:28px;height:28px;transform-origin:center center;">
+  html:`<div id="player-arrow" style="width:28px;height:28px;transform-origin:center center;transition:transform 0.3s ease-out;">
     <svg width="28" height="28" viewBox="0 0 28 28">
       <polygon points="14,2 22,24 14,20 6,24" fill="#D4A843" stroke="white" stroke-width="2" stroke-linejoin="round"/>
     </svg>
@@ -683,7 +707,7 @@ function onPosition(pos) {
   if (accuracyCircle) accuracyCircle.remove();
   accuracyCircle = L.circle([lat,lng], { radius:acc, color:'#D4A843', fillColor:'#D4A843', fillOpacity:0.05, weight:1 }).addTo(map);
 
-  if (isFollowing) map.setView([lat,lng]);
+  if (isFollowing) map.panTo([lat, lng], { animate: true, duration: 0.5 });
 
   document.getElementById('gps-dot').className = 'active';
   document.getElementById('gps-text').textContent = 'GPS aktiven';
@@ -717,7 +741,11 @@ function onError() {
   document.getElementById('gps-dot').className='error';
   document.getElementById('gps-text').textContent='GPS napaka';
 }
-navigator.geolocation?.watchPosition(onPosition, onError, {enableHighAccuracy:true, timeout:10000, maximumAge:2000});
+navigator.geolocation?.watchPosition(onPosition, onError, {
+  enableHighAccuracy: true,
+  timeout: 5000,
+  maximumAge: 0  // Vedno sveže koordinate - brez zamika
+});
 
 // COMPASS
 function updateHeading(e) {
