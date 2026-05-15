@@ -117,14 +117,6 @@
 
     /* MAP */
     #map { flex:1; width:100%; z-index:1; }
-    .leaflet-container {
-      touch-action: none !important;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    .leaflet-drag-target {
-      touch-action: none !important;
-    }
 
     /* FAB in type-bar ne blokirata mape */
     #boundary-badge { pointer-events: none; }
@@ -639,24 +631,8 @@ const map = L.map('map', {
   zoomControl: true,
   attributionControl: false,
   preferCanvas: true,
-  zoomAnimation: true,
-  fadeAnimation: true,
-  markerZoomAnimation: true,
-  dragging: true,
-  inertia: true,
-  inertiaDeceleration: 3000,
-  inertiaMaxSpeed: 3000,
-  tap: true,
-  tapTolerance: 15,
-  touchZoom: true,
-  scrollWheelZoom: true,
-  bounceAtZoomLimits: false,
 });
 map.setView([46.3740, 15.7350], 12);
-
-// iOS drag fix
-map.dragging.enable();
-if (map.tap) map.tap.enable();
 
 const satLayer = L.tileLayer(
   `https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`,
