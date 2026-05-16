@@ -146,7 +146,7 @@
     /* ── FAB MENU - med + in - gumbi ── */
     #fab-wrap {
       position: absolute;
-      top: 23px; right: 10px;
+      top: 37px; right: 10px;
       z-index: 500;
       display: flex;
       flex-direction: column;
@@ -171,9 +171,10 @@
       pointer-events: auto;
     }
     #fab-main.open {
-      background: rgba(136,176,75,0.2);
-      border-color: var(--accent);
+      background: white;
+      border-color: white;
       color: var(--accent);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
     #fab-main:active { transform: scale(0.9); }
 
@@ -862,8 +863,37 @@ let selType = null;
 let savedMarkers = [];
 let activeIdx = null;
 let pendingPhoto = null;
+let activeFilter = null;
 
-let activeFilter = null; // kateri tip je trenutno prikazan
+// ── SHRANI V localStorage ──
+function saveToStorage() {
+  const data = savedMarkers.map(m => ({
+    type: m.type, label: m.label, svg: m.svg,
+    color: m.color, emoji: m.emoji, name: m.name,
+    lat: m.lat, lng: m.lng, photo: m.photo
+  }));
+  try { localStorage.setItem('ld_markers', JSON.stringify(data)); } catch(e) {}
+}
+
+// ── NALOŽI IZ localStorage ──
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem('ld_markers');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    data.forEach(d => {
+      const idx = savedMarkers.length;
+      const ico = L.divIcon({
+        html: `<div style="background:${d.color};border:2.5px solid white;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(0,0,0,0.6);">${d.svg}</div>`,
+        className:'', iconSize:[36,36], iconAnchor:[18,18],
+      });
+      const lm = L.marker([d.lat, d.lng], {icon:ico});
+      lm.on('click', () => openInfo(idx));
+      savedMarkers.push({...d, lm});
+      // Ne dodaj na mapo - vidni so samo ko je filter aktiven
+    });
+  } catch(e) {}
+}
 
 function showOnlyType(type) {
   savedMarkers.forEach(m => {
@@ -978,7 +1008,7 @@ function confirmSave() {
   map.removeLayer(lm);
 
   closeSavePopup();
-  // Ostani v filtru tega tipa
+  saveToStorage();
   showOnlyType(savedType);
 }
 
@@ -1030,13 +1060,27 @@ function deleteMarker() {
   if (activeFilter) showOnlyType(activeFilter);
 }
 
+function deleteMarker() {
+  if (activeIdx === null) return;
+  map.removeLayer(savedMarkers[activeIdx].lm);
+  savedMarkers.splice(activeIdx, 1);
+  savedMarkers.forEach((m,i) => {
+    m.lm.off('click');
+    m.lm.on('click', () => openInfo(i));
+  });
+  closeInfo();
+  saveToStorage();
+  if (activeFilter) showOnlyType(activeFilter);
+}
+
 // INIT
 window.addEventListener('load', () => {
   setTimeout(() => {
     document.getElementById('loading').style.display = 'none';
     requestCompass();
-    // Začetno stanje gumba - satelit
     document.getElementById('btn-map-toggle').classList.add('satellite');
+    // Naloži shranjene markerje iz localStorage
+    loadFromStorage();
   }, 1800);
 });
 </script>
