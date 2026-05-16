@@ -1001,8 +1001,8 @@ async function downloadOfflineMap() {
     minLng: 15.65, maxLng: 15.83
   };
 
-  // Zoom nivoji: 12=celota, 14=vasi, 16=hiše, 17=detajl
-  const zooms = [12, 13, 14, 15, 16, 17];
+  // Zoom nivoji: 12=celota, 13, 14, 15=hiše in poti
+  const zooms = [12, 13, 14, 15];
 
   // Izračunaj vse tile koordinate
   function latLngToTile(lat, lng, z) {
@@ -1329,11 +1329,9 @@ window.addEventListener('load', () => {
   }, 1800);
 });
 
-// Service Worker - offline podpora
+// Service Worker
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/lovisc-app/sw.js').catch(() => {});
-  });
+  navigator.serviceWorker.register('/lovisc-app/sw.js').catch(() => {});
 }
 </script>
 </body>
