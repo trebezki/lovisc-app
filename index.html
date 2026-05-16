@@ -1107,7 +1107,15 @@ window.addEventListener('load', () => {
     document.getElementById('loading').style.display = 'none';
     requestCompass();
     document.getElementById('btn-map-toggle').classList.add('satellite');
-    // Naloži shranjene markerje iz localStorage
+    loadFromStorage();
+  }, 1800);
+
+  // Registriraj Service Worker za offline delovanje
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/lovisc-app/sw.js')
+      .catch(e => console.log('SW:', e));
+  }
+});
     loadFromStorage();
   }, 1800);
 });
