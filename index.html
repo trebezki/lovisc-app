@@ -1110,14 +1110,11 @@ window.addEventListener('load', () => {
     loadFromStorage();
   }, 1800);
 
-  // Registriraj Service Worker za offline delovanje
+  // Service Worker za offline
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/lovisc-app/sw.js')
-      .catch(e => console.log('SW:', e));
+    navigator.serviceWorker.register('/lovisc-app/sw.js').catch(()=>{});
   }
 });
-    loadFromStorage();
-  }, 1800);
 });
 </script>
 </body>
