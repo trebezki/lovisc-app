@@ -1109,12 +1109,6 @@ window.addEventListener('load', () => {
     document.getElementById('btn-map-toggle').classList.add('satellite');
     loadFromStorage();
   }, 1800);
-
-  // Service Worker za offline
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/lovisc-app/sw.js').catch(()=>{});
-  }
-});
 });
 </script>
 </body>
