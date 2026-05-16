@@ -1110,6 +1110,13 @@ window.addEventListener('load', () => {
     loadFromStorage();
   }, 1800);
 });
+
+// Service Worker - offline podpora
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/lovisc-app/sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
