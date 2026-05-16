@@ -1,35 +1,27 @@
-const CACHE = 'ld-v3';
-const TILE_CACHE = 'ld-tiles-v1';
+const CACHE = 'ld-v4';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll([
-      '/lovisc-app/index.html',
-      'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
-      'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
-    ]).catch(() => {}))
-  );
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE && k !== TILE_CACHE)
-            .map(k => caches.delete(k))
-      )
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', e => {
+  // Samo GET requeste
+  if (e.request.method !== 'GET') return;
+  
   const url = e.request.url;
-
-  // Map tile-i - shrani za offline
+  
+  // Tile-i - cache first, potem network
   if (url.includes('maptiler.com')) {
     e.respondWith(
-      caches.open(TILE_CACHE).then(async cache => {
+      caches.open(CACHE).then(async cache => {
         const cached = await cache.match(e.request);
         if (cached) return cached;
         try {
@@ -37,28 +29,26 @@ self.addEventListener('fetch', e => {
           if (resp && resp.ok) cache.put(e.request, resp.clone());
           return resp;
         } catch {
-          return cached || Response.error();
+          return cached || new Response('', {status: 503});
         }
       })
     );
     return;
   }
 
-  // App datoteke
-  if (url.includes('/lovisc-app/')) {
+  // App datoteke - network first, cache fallback
+  if (url.includes('lovisc-app') || url.includes('leaflet') || url.includes('googleapis') || url.includes('gstatic')) {
     e.respondWith(
-      caches.match(e.request).then(cached => {
-        return cached || fetch(e.request).then(resp => {
-          caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
+      fetch(e.request)
+        .then(resp => {
+          if (resp && resp.ok) {
+            const clone = resp.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+          }
           return resp;
-        });
-      })
+        })
+        .catch(() => caches.match(e.request))
     );
     return;
   }
-
-  // Vse ostalo - normalno
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
 });
