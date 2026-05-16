@@ -721,6 +721,42 @@ const playerIcon = L.divIcon({
 
 let playerMarker=null, accuracyCircle=null, lastPos=null, wasOutside=false;
 
+// Smooth animacija med GPS updatei
+let animFrame = null;
+let fromLat = null, fromLng = null;
+let toLat = null, toLng = null;
+let animStart = null;
+const ANIM_DURATION = 1000; // ms - interpoliraj med GPS updatei
+
+function animateMarker() {
+  if (!fromLat || !toLat) return;
+  const now = performance.now();
+  const elapsed = now - animStart;
+  const t = Math.min(elapsed / ANIM_DURATION, 1);
+  // Ease out
+  const ease = 1 - Math.pow(1 - t, 3);
+  const curLat = fromLat + (toLat - fromLat) * ease;
+  const curLng = fromLng + (toLng - fromLng) * ease;
+
+  if (playerMarker) playerMarker.setLatLng([curLat, curLng]);
+  if (isFollowing) map.panTo([curLat, curLng], { animate: false });
+
+  if (t < 1) animFrame = requestAnimationFrame(animateMarker);
+}
+
+function smoothMoveTo(lat, lng) {
+  if (animFrame) cancelAnimationFrame(animFrame);
+  if (playerMarker) {
+    const cur = playerMarker.getLatLng();
+    fromLat = cur.lat; fromLng = cur.lng;
+  } else {
+    fromLat = lat; fromLng = lng;
+  }
+  toLat = lat; toLng = lng;
+  animStart = performance.now();
+  animFrame = requestAnimationFrame(animateMarker);
+}
+
 let isFollowing = true;
 map.on('dragstart', () => {
   isFollowing = false;
@@ -731,13 +767,16 @@ map.on('dragstart', () => {
 function onPosition(pos) {
   const {latitude:lat, longitude:lng, accuracy:acc, altitude:alt} = pos.coords;
 
-  if (!playerMarker) playerMarker = L.marker([lat,lng], {icon:playerIcon}).addTo(map);
-  else playerMarker.setLatLng([lat,lng]);
+  if (!playerMarker) {
+    playerMarker = L.marker([lat,lng], {icon:playerIcon}).addTo(map);
+    fromLat = lat; fromLng = lng;
+  }
+
+  // Smooth premik
+  smoothMoveTo(lat, lng);
 
   if (accuracyCircle) accuracyCircle.remove();
-  accuracyCircle = L.circle([lat,lng], { radius:acc, color:'#D4A843', fillColor:'#D4A843', fillOpacity:0.05, weight:1 }).addTo(map);
-
-  if (isFollowing) map.panTo([lat, lng], { animate: true, duration: 0.5 });
+  accuracyCircle = L.circle([lat,lng], { radius:acc, color:'#4A9FD4', fillColor:'#4A9FD4', fillOpacity:0.05, weight:1 }).addTo(map);
 
   document.getElementById('gps-dot').className = 'active';
   document.getElementById('gps-text').textContent = 'GPS aktiven';
