@@ -713,7 +713,7 @@ const boundaryPoly = L.polygon(BOUNDARY_COORDS, { color:'#4A9FD4', weight:2.5, o
 const playerIcon = L.divIcon({
   html:`<div id="player-arrow" style="width:28px;height:28px;transform-origin:center center;transition:transform 0.3s ease-out;">
     <svg width="28" height="28" viewBox="0 0 28 28">
-      <polygon points="14,2 22,24 14,20 6,24" fill="#D4A843" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+      <polygon points="14,2 22,24 14,20 6,24" fill="#4A9FD4" stroke="white" stroke-width="2" stroke-linejoin="round"/>
     </svg>
   </div>`,
   className:'', iconSize:[28,28], iconAnchor:[14,14],
@@ -722,20 +722,10 @@ const playerIcon = L.divIcon({
 let playerMarker=null, accuracyCircle=null, lastPos=null, wasOutside=false;
 
 let isFollowing = true;
-let followTimer = null;
 map.on('dragstart', () => {
   isFollowing = false;
-  // Pokaži gumb za vrnitev sledenja
   document.getElementById('btn-center').style.borderColor = 'var(--amber)';
   document.getElementById('btn-center').style.color = 'var(--amber)';
-  // Po 8 sekundah brez dotika - avtomatsko vklopi sledenje nazaj
-  clearTimeout(followTimer);
-  followTimer = setTimeout(() => {
-    isFollowing = true;
-    document.getElementById('btn-center').style.borderColor = '';
-    document.getElementById('btn-center').style.color = '';
-    if (lastPos) map.setView([lastPos.lat, lastPos.lng], map.getZoom());
-  }, 8000);
 });
 
 function onPosition(pos) {
@@ -830,7 +820,6 @@ setInterval(()=>{if(weatherLat)loadWeather(weatherLat,weatherLng);},10*60*1000);
 
 function centerOnMe() {
   isFollowing = true;
-  clearTimeout(followTimer);
   document.getElementById('btn-center').style.borderColor = '';
   document.getElementById('btn-center').style.color = '';
   if (lastPos) map.setView([lastPos.lat, lastPos.lng], 16);
