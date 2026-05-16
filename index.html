@@ -10,6 +10,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
@@ -308,7 +311,38 @@
       font-family: Inter, sans-serif; font-size: 12px; cursor: pointer;
     }
 
-    /* MAP TOGGLE gumb */
+    /* OFFLINE gumb */
+    #btn-offline.downloading {
+      border-color: var(--amber);
+      color: var(--amber);
+      animation: blink 1s infinite;
+    }
+    #btn-offline.done {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* OFFLINE PROGRESS */
+    #offline-progress {
+      position: absolute;
+      bottom: 100px; left: 50%; transform: translateX(-50%);
+      z-index: 800;
+      background: rgba(15,42,29,0.97);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 20px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 240px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    #offline-progress.show { display: flex; }
+    #offline-progress-title { font-size: 12px; font-weight: 700; color: var(--amber); }
+    #offline-progress-bar-wrap { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+    #offline-progress-bar { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.3s; }
+    #offline-progress-text { font-size: 10px; color: var(--text-dim); }
     #btn-map-toggle { transition: all 0.2s; }
     #btn-map-toggle.normal {
       background: white;
@@ -551,6 +585,13 @@
   </button>
 </div>
 
+<!-- OFFLINE PROGRESS -->
+<div id="offline-progress">
+  <div id="offline-progress-title">⬇️ Prenašam offline mapo...</div>
+  <div id="offline-progress-bar-wrap"><div id="offline-progress-bar"></div></div>
+  <div id="offline-progress-text">0 / 0 tile-ov</div>
+</div>
+
 <!-- SAVE POPUP -->
 <div id="save-popup">
   <div id="save-popup-title">—</div>
@@ -632,6 +673,12 @@
           <path d="M9 4v13M15 7v13" stroke="currentColor" stroke-width="1.5"/>
         </svg>
       </button>
+      <button class="btn-action" id="btn-offline" onclick="downloadOfflineMap()" title="Prenesi offline mapo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 2a5 5 0 0 1 5 5c0 1-.3 2-.8 2.8A4 4 0 0 1 20 14a4 4 0 0 1-4 4H7a5 5 0 0 1-.5-10A5 5 0 0 1 12 2z"/>
+          <path d="M12 12v6M9 15l3 3 3-3"/>
+        </svg>
+      </button>
     </div>
     <div id="clock-center"><span id="clock-time">—</span></div>
     <div id="sun-pill">
@@ -644,6 +691,26 @@
 
 <script>
 const MAPTILER_KEY = '8MprynDQ4qJMQcD3R5X2';
+
+// ── FIREBASE ──
+const firebaseConfig = {
+  apiKey: "AIzaSyDTcV-pB8OZ-FKrgRDAH4noH_V6muOSER4",
+  authDomain: "ld-dravinja.firebaseapp.com",
+  databaseURL: "https://ld-dravinja-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "ld-dravinja",
+  storageBucket: "ld-dravinja.firebasestorage.app",
+  messagingSenderId: "527448088333",
+  appId: "1:527448088333:web:f432f3439471c22a2d1a44"
+};
+
+let db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+  console.log('Firebase connected');
+} catch(e) {
+  console.log('Firebase offline - using local only');
+}
 
 const BOUNDARY_COORDS = [
   [46.4010,15.7050],[46.4020,15.7300],[46.4015,15.7500],[46.4005,15.7650],
@@ -893,34 +960,141 @@ let activeIdx = null;
 let pendingPhoto = null;
 let activeFilter = null;
 
-// ── SHRANI V localStorage ──
+// ── OFFLINE MAPA - prenesi tile-e za lovišče ──
+async function downloadOfflineMap() {
+  if (!('caches' in window)) {
+    alert('Vaš brskalnik ne podpira offline shranjevanja.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-offline');
+  if (btn.classList.contains('downloading')) return;
+
+  btn.classList.add('downloading');
+  document.getElementById('offline-progress').classList.add('show');
+
+  // Območje lovišča + malo okoli
+  const bounds = {
+    minLat: 46.33, maxLat: 46.42,
+    minLng: 15.65, maxLng: 15.83
+  };
+
+  // Zoom nivoji: 12=celota, 14=vasi, 16=hiše, 17=detajl
+  const zooms = [12, 13, 14, 15, 16, 17];
+
+  // Izračunaj vse tile koordinate
+  function latLngToTile(lat, lng, z) {
+    const x = Math.floor((lng + 180) / 360 * Math.pow(2, z));
+    const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z));
+    return {x, y};
+  }
+
+  let tiles = [];
+  for (const z of zooms) {
+    const tl = latLngToTile(bounds.maxLat, bounds.minLng, z);
+    const br = latLngToTile(bounds.minLat, bounds.maxLng, z);
+    for (let x = tl.x; x <= br.x; x++) {
+      for (let y = tl.y; y <= br.y; y++) {
+        tiles.push({z, x, y});
+      }
+    }
+  }
+
+  const total = tiles.length;
+  let done = 0;
+  const cache = await caches.open('ld-tiles-v1');
+
+  document.getElementById('offline-progress-text').textContent = `0 / ${total} tile-ov`;
+
+  // Prenesi tile-e v skupinah po 5
+  for (let i = 0; i < tiles.length; i += 5) {
+    const batch = tiles.slice(i, i + 5);
+    await Promise.all(batch.map(async ({z, x, y}) => {
+      const url = `https://api.maptiler.com/tiles/satellite-v2/${z}/${x}/${y}.jpg?key=${MAPTILER_KEY}`;
+      try {
+        const cached = await cache.match(url);
+        if (!cached) {
+          const resp = await fetch(url);
+          if (resp.ok) await cache.put(url, resp);
+        }
+      } catch {}
+      done++;
+    }));
+
+    const pct = Math.round(done / total * 100);
+    document.getElementById('offline-progress-bar').style.width = pct + '%';
+    document.getElementById('offline-progress-text').textContent = `${done} / ${total} tile-ov (${pct}%)`;
+  }
+
+  btn.classList.remove('downloading');
+  btn.classList.add('done');
+  document.getElementById('offline-progress-title').textContent = '✅ Offline mapa shranjena!';
+  document.getElementById('offline-progress-text').textContent = 'Mapa deluje brez interneta';
+
+  setTimeout(() => {
+    document.getElementById('offline-progress').classList.remove('show');
+  }, 3000);
+}
 function saveToStorage() {
   const data = savedMarkers.map(m => ({
     type: m.type, label: m.label, svg: m.svg,
     color: m.color, emoji: m.emoji, name: m.name,
-    lat: m.lat, lng: m.lng, photo: m.photo
+    lat: m.lat, lng: m.lng, photo: m.photo || null
   }));
   try { localStorage.setItem('ld_markers', JSON.stringify(data)); } catch(e) {}
+
+  // Sinhroniziraj z Firebase skupaj s slikami
+  if (db) {
+    db.ref('markers').set(data).catch(() => {});
+  }
 }
 
-// ── NALOŽI IZ localStorage ──
+// ── NALOŽI IZ localStorage + Firebase ──
+function addMarkerToMap(d) {
+  const idx = savedMarkers.length;
+  const ico = L.divIcon({
+    html: `<div style="background:${d.color};border:2.5px solid white;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(0,0,0,0.6);">${d.svg}</div>`,
+    className:'', iconSize:[36,36], iconAnchor:[18,18],
+  });
+  const lm = L.marker([d.lat, d.lng], {icon:ico});
+  lm.on('click', () => openInfo(idx));
+  savedMarkers.push({...d, lm});
+}
+
 function loadFromStorage() {
+  // 1. Najprej naloži iz localStorage (deluje offline)
   try {
     const raw = localStorage.getItem('ld_markers');
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    data.forEach(d => {
-      const idx = savedMarkers.length;
-      const ico = L.divIcon({
-        html: `<div style="background:${d.color};border:2.5px solid white;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(0,0,0,0.6);">${d.svg}</div>`,
-        className:'', iconSize:[36,36], iconAnchor:[18,18],
-      });
-      const lm = L.marker([d.lat, d.lng], {icon:ico});
-      lm.on('click', () => openInfo(idx));
-      savedMarkers.push({...d, lm});
-      // Ne dodaj na mapo - vidni so samo ko je filter aktiven
-    });
+    if (raw) {
+      const data = JSON.parse(raw);
+      data.forEach(d => addMarkerToMap(d));
+    }
   } catch(e) {}
+
+  // 2. Potem sinhroniziraj z Firebase (samo ko je online)
+  if (db) {
+    db.ref('markers').once('value').then(snap => {
+      const fbData = snap.val();
+      if (!fbData || !Array.isArray(fbData) || fbData.length === 0) return;
+
+      // Ohrani lokalne fotografije
+      let localData = [];
+      try { localData = JSON.parse(localStorage.getItem('ld_markers') || '[]'); } catch(e) {}
+
+      // Pobriši obstoječe markerje in naloži Firebase verzijo
+      savedMarkers.forEach(m => map.removeLayer(m.lm));
+      savedMarkers = [];
+
+      fbData.forEach(d => {
+        const localM = localData.find(lm => lm.lat === d.lat && lm.lng === d.lng);
+        if (localM && localM.photo) d.photo = localM.photo;
+        addMarkerToMap(d);
+      });
+
+      // Shrani posodobljeno v localStorage
+      try { localStorage.setItem('ld_markers', JSON.stringify(fbData)); } catch(e) {}
+    }).catch(() => {}); // offline - ni problema
+  }
 }
 
 function showOnlyType(type) {
@@ -1000,16 +1174,28 @@ function closeSavePopup() {
   document.getElementById('save-popup').classList.remove('show');
 }
 
-// Foto preview
+// Foto preview + kompresija
 document.getElementById('save-photo').addEventListener('change', function() {
   const file = this.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    pendingPhoto = e.target.result;
-    document.getElementById('save-preview').src = pendingPhoto;
-    document.getElementById('save-preview').style.display = 'block';
-    document.getElementById('save-photo-label').style.display = 'none';
+    // Stisni sliko na max 400px in 60% kvaliteto
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxSize = 400;
+      let w = img.width, h = img.height;
+      if (w > h && w > maxSize) { h = h * maxSize / w; w = maxSize; }
+      else if (h > maxSize) { w = w * maxSize / h; h = maxSize; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      pendingPhoto = canvas.toDataURL('image/jpeg', 0.6);
+      document.getElementById('save-preview').src = pendingPhoto;
+      document.getElementById('save-preview').style.display = 'block';
+      document.getElementById('save-photo-label').style.display = 'none';
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 });
