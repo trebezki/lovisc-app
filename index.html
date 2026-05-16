@@ -589,7 +589,13 @@
 <div id="offline-progress">
   <div id="offline-progress-title">⬇️ Prenašam offline mapo...</div>
   <div id="offline-progress-bar-wrap"><div id="offline-progress-bar"></div></div>
-  <div id="offline-progress-text">0 / 0 tile-ov</div>
+  <div id="offline-progress-text">Izračunavam...</div>
+  <div id="offline-progress-time" style="font-size:10px;color:var(--amber);margin-top:2px;"></div>
+  <button id="offline-cancel-btn" onclick="cancelOfflineDownload()" style="
+    margin-top:6px; background:rgba(231,76,60,0.15); border:1px solid rgba(231,76,60,0.3);
+    color:#ff9090; border-radius:10px; padding:7px 14px;
+    font-family:Inter,sans-serif; font-size:11px; cursor:pointer; width:100%;
+  ">✕ Prekliči prenos</button>
 </div>
 
 <!-- SAVE POPUP -->
@@ -982,29 +988,30 @@ let activeIdx = null;
 let pendingPhoto = null;
 let activeFilter = null;
 
-// ── OFFLINE MAPA - prenesi tile-e za lovišče ──
-async function downloadOfflineMap() {
-  if (!('caches' in window)) {
-    alert('Vaš brskalnik ne podpira offline shranjevanja.');
-    return;
-  }
+// ── OFFLINE MAPA ──
+let downloadCancelled = false;
 
+function cancelOfflineDownload() {
+  downloadCancelled = true;
+  document.getElementById('offline-progress').classList.remove('show');
+  document.getElementById('btn-offline').classList.remove('downloading');
+}
+
+async function downloadOfflineMap() {
+  if (!('caches' in window)) { alert('Vaš brskalnik ne podpira offline shranjevanja.'); return; }
   const btn = document.getElementById('btn-offline');
   if (btn.classList.contains('downloading')) return;
 
+  downloadCancelled = false;
   btn.classList.add('downloading');
+  btn.classList.remove('done');
   document.getElementById('offline-progress').classList.add('show');
+  document.getElementById('offline-progress-title').textContent = '⬇️ Prenašam offline mapo...';
+  document.getElementById('offline-cancel-btn').style.display = 'block';
 
-  // Območje lovišča + malo okoli
-  const bounds = {
-    minLat: 46.33, maxLat: 46.42,
-    minLng: 15.65, maxLng: 15.83
-  };
+  const bounds = { minLat:46.33, maxLat:46.42, minLng:15.65, maxLng:15.83 };
+  const zooms = [12, 13, 14, 15, 16, 17];
 
-  // Zoom nivoji: 12=celota, 13, 14, 15=hiše in poti
-  const zooms = [12, 13, 14, 15];
-
-  // Izračunaj vse tile koordinate
   function latLngToTile(lat, lng, z) {
     const x = Math.floor((lng + 180) / 360 * Math.pow(2, z));
     const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z));
@@ -1015,48 +1022,60 @@ async function downloadOfflineMap() {
   for (const z of zooms) {
     const tl = latLngToTile(bounds.maxLat, bounds.minLng, z);
     const br = latLngToTile(bounds.minLat, bounds.maxLng, z);
-    for (let x = tl.x; x <= br.x; x++) {
-      for (let y = tl.y; y <= br.y; y++) {
+    for (let x = tl.x; x <= br.x; x++)
+      for (let y = tl.y; y <= br.y; y++)
         tiles.push({z, x, y});
-      }
-    }
   }
 
   const total = tiles.length;
   let done = 0;
+  const startTime = Date.now();
   const cache = await caches.open('ld-tiles-v1');
 
   document.getElementById('offline-progress-text').textContent = `0 / ${total} tile-ov`;
+  document.getElementById('offline-progress-time').textContent = 'Izračunavam čas...';
 
-  // Prenesi tile-e v skupinah po 5
   for (let i = 0; i < tiles.length; i += 5) {
+    if (downloadCancelled) return;
+
     const batch = tiles.slice(i, i + 5);
     await Promise.all(batch.map(async ({z, x, y}) => {
+      if (downloadCancelled) return;
       const url = `https://api.maptiler.com/tiles/satellite-v2/${z}/${x}/${y}.jpg?key=${MAPTILER_KEY}`;
       try {
         const cached = await cache.match(url);
-        if (!cached) {
-          const resp = await fetch(url);
-          if (resp.ok) await cache.put(url, resp);
-        }
+        if (!cached) { const resp = await fetch(url); if (resp.ok) await cache.put(url, resp); }
       } catch {}
       done++;
     }));
 
+    if (downloadCancelled) return;
+
     const pct = Math.round(done / total * 100);
     document.getElementById('offline-progress-bar').style.width = pct + '%';
     document.getElementById('offline-progress-text').textContent = `${done} / ${total} tile-ov (${pct}%)`;
+
+    // Ocena preostalega časa
+    if (done > 10) {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const speed = done / elapsed;
+      const remaining = Math.round((total - done) / speed);
+      const min = Math.floor(remaining / 60);
+      const sec = remaining % 60;
+      document.getElementById('offline-progress-time').textContent =
+        min > 0 ? `Še ~${min} min ${sec} sek` : `Še ~${sec} sek`;
+    }
   }
 
   btn.classList.remove('downloading');
   btn.classList.add('done');
   document.getElementById('offline-progress-title').textContent = '✅ Offline mapa shranjena!';
   document.getElementById('offline-progress-text').textContent = 'Mapa deluje brez interneta';
-
-  setTimeout(() => {
-    document.getElementById('offline-progress').classList.remove('show');
-  }, 3000);
+  document.getElementById('offline-progress-time').textContent = '';
+  document.getElementById('offline-cancel-btn').style.display = 'none';
+  setTimeout(() => document.getElementById('offline-progress').classList.remove('show'), 3000);
 }
+
 function saveToStorage() {
   const data = savedMarkers.map(m => ({
     type: m.type, label: m.label, svg: m.svg,
