@@ -528,7 +528,7 @@
 
 <div id="location-popup" style="display:none;">
   <div id="location-popup-card">
-    <div id="location-popup-icon">📲</div>
+    <div id="location-popup-icon">🏠</div>
     <h2>Dodaj na domači zaslon</h2>
     <p id="install-instructions"></p>
     <button id="location-popup-btn" onclick="document.getElementById('location-popup').style.display='none'">
@@ -913,13 +913,13 @@ function showInstallInstructions() {
   
   let text = '';
   if (isIOS) {
-    text = `<b>iPhone/iPad:</b><br>
-    1. Klikni ikono <b>□↑</b> (Deli) spodaj<br>
+    text = `<b>iPhone/iPad:</b><br><br>
+    1. Klikni ikono <b>⬆️</b> spodaj na sredini<br>
     2. Izberi <b>"Dodaj na začetni zaslon"</b><br>
     3. Klikni <b>"Dodaj"</b>`;
   } else if (isAndroid) {
-    text = `<b>Android:</b><br>
-    1. Klikni <b>⋮</b> (3 pike) zgoraj desno<br>
+    text = `<b>Android:</b><br><br>
+    1. Klikni <b>⋮</b> zgoraj desno<br>
     2. Izberi <b>"Dodaj na začetni zaslon"</b><br>
     3. Klikni <b>"Dodaj"</b>`;
   } else {
