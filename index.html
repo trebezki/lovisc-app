@@ -528,7 +528,7 @@
 
 <div id="location-popup" style="display:none;">
   <div id="location-popup-card">
-    <div id="location-popup-icon">🏠</div>
+    <div id="location-popup-icon">📲</div>
     <h2>Dodaj na domači zaslon</h2>
     <p id="install-instructions"></p>
     <button id="location-popup-btn" onclick="document.getElementById('location-popup').style.display='none'">
@@ -904,9 +904,10 @@ function showInstallInstructions() {
   // Če je že nameščena kot app - ne prikazuj
   if (window.matchMedia('(display-mode: standalone)').matches) return;
   // Če je že videl navodila - ne prikazuj
-  if (localStorage.getItem('install_shown')) return;
+  if (localStorage.getItem('install_shown') === '1') return;
+  if (localStorage.getItem('install_shown_v2')) return;
   
-  localStorage.setItem('install_shown', '1');
+  localStorage.setItem('install_shown_v2', '1');
   
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isAndroid = /Android/.test(navigator.userAgent);
@@ -914,9 +915,19 @@ function showInstallInstructions() {
   let text = '';
   if (isIOS) {
     text = `<b>iPhone/iPad:</b><br><br>
-    1. Klikni ikono <b>⬆️</b> spodaj na sredini<br>
-    2. Izberi <b>"Dodaj na začetni zaslon"</b><br>
-    3. Klikni <b>"Dodaj"</b>`;
+    1. Klikni ikono 
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;display:inline-block">
+      <path d="M12 3v13"/><path d="M8 7l4-4 4 4"/>
+      <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>
+    </svg>
+    spodaj na sredini<br><br>
+    2. Izberi <b>"Dodaj na začetni zaslon"</b><br><br>
+    3. Klikni 
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;display:inline-block">
+      <rect x="3" y="3" width="18" height="18" rx="4"/>
+      <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    <b>"Dodaj"</b>`;
   } else if (isAndroid) {
     text = `<b>Android:</b><br><br>
     1. Klikni <b>⋮</b> zgoraj desno<br>
