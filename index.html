@@ -132,7 +132,7 @@
       inset: 0;
       background: rgba(0,0,0,0.85);
       z-index: 99998;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       padding: 24px;
@@ -626,7 +626,7 @@
   </div>
 </div>
 
-<div id="location-popup" style="display:none;">
+<div id="location-popup">
   <div id="location-popup-card">
     <div id="location-popup-icon">📲</div>
     <h2>Dodaj na domači zaslon</h2>
@@ -1147,8 +1147,10 @@ function showInstallInstructions() {
     2. Izberi <b>"Dodaj na začetni zaslon"</b><br><br>
     3. Klikni <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;display:inline-block"><rect x="3" y="3" width="18" height="18" rx="4"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> <b>"Dodaj"</b>`;
 
-  document.getElementById('install-instructions').innerHTML = text;
-  document.getElementById('location-popup').style.display = 'flex';
+  const popup = document.getElementById('location-popup');
+  const instructions = document.getElementById('install-instructions');
+  instructions.innerHTML = text;
+  popup.style.cssText = 'display:flex !important;';
 }
 
 function showLocationPopup() {
