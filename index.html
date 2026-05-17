@@ -1158,26 +1158,27 @@ let animFrame = null;
 let fromLat = null, fromLng = null;
 let toLat = null, toLng = null;
 let animStart = null;
-const ANIM_DURATION = 1000; // ms - interpoliraj med GPS updatei
+const ANIM_DURATION = 800;
 
-function animateMarker() {
-  if (!fromLat || !toLat) return;
-  const now = performance.now();
-  const elapsed = now - animStart;
-  const t = Math.min(elapsed / ANIM_DURATION, 1);
-  // Ease out
-  const ease = 1 - Math.pow(1 - t, 3);
-  const curLat = fromLat + (toLat - fromLat) * ease;
-  const curLng = fromLng + (toLng - fromLng) * ease;
+// Teče ves čas na 60fps za super smooth animacijo
+function animLoop() {
+  if (fromLat !== null && toLat !== null) {
+    const now = performance.now();
+    const elapsed = now - animStart;
+    const t = Math.min(elapsed / ANIM_DURATION, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    
+    const curLat = fromLat + (toLat - fromLat) * ease;
+    const curLng = fromLng + (toLng - fromLng) * ease;
 
-  if (playerMarker) playerMarker.setLatLng([curLat, curLng]);
-  if (isFollowing) map.panTo([curLat, curLng], { animate: false });
-
-  if (t < 1) animFrame = requestAnimationFrame(animateMarker);
+    if (playerMarker) playerMarker.setLatLng([curLat, curLng]);
+    if (isFollowing) map.panTo([curLat, curLng], { animate: false });
+  }
+  requestAnimationFrame(animLoop);
 }
+animLoop(); // Zaženi takoj
 
 function smoothMoveTo(lat, lng) {
-  if (animFrame) cancelAnimationFrame(animFrame);
   if (playerMarker) {
     const cur = playerMarker.getLatLng();
     fromLat = cur.lat; fromLng = cur.lng;
@@ -1186,7 +1187,6 @@ function smoothMoveTo(lat, lng) {
   }
   toLat = lat; toLng = lng;
   animStart = performance.now();
-  animFrame = requestAnimationFrame(animateMarker);
 }
 
 let isFollowing = true;
@@ -1251,21 +1251,46 @@ navigator.geolocation?.watchPosition(onPosition, onError, {
     maximumAge: 0
   });
 
-// COMPASS
+// COMPASS + MAP ROTATION
+let currentHeading = 0;
+let targetHeading = 0;
+let mapRotationEnabled = false;
+
 function updateHeading(e) {
-  const h=(e.webkitCompassHeading!=null)?e.webkitCompassHeading:(e.alpha!=null?360-e.alpha:0);
-  const el=document.getElementById('player-arrow');
-  if(el) el.style.transform=`rotate(${h}deg)`;
+  const h = (e.webkitCompassHeading != null) ? e.webkitCompassHeading : (e.alpha != null ? 360 - e.alpha : 0);
+  
+  // Smooth heading interpolation
+  let diff = h - currentHeading;
+  if (diff > 180) diff -= 360;
+  if (diff < -180) diff += 360;
+  currentHeading += diff * 0.15;
+  
+  // Obrni puščico
+  const el = document.getElementById('player-arrow');
+  if (el) el.style.transform = `rotate(${currentHeading}deg)`;
+  
+  // Obrni mapo če je sledenje vklopljeno
+  if (isFollowing && mapRotationEnabled) {
+    map.getContainer().style.transform = `rotate(${-currentHeading}deg)`;
+    map.getContainer().style.transformOrigin = 'center center';
+  }
 }
+
 function requestCompass() {
-  if (typeof DeviceOrientationEvent?.requestPermission==='function') {
-    DeviceOrientationEvent.requestPermission().then(r=>{
-      if(r==='granted'){window.removeEventListener('deviceorientation',updateHeading,true);window.addEventListener('deviceorientation',updateHeading,true);document.getElementById('btn-compass').classList.add('active');}
+  if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().then(r => {
+      if (r === 'granted') {
+        window.removeEventListener('deviceorientation', updateHeading, true);
+        window.addEventListener('deviceorientation', updateHeading, true);
+        document.getElementById('btn-compass').classList.add('active');
+        mapRotationEnabled = true;
+      }
     }).catch(console.error);
   } else {
-    window.removeEventListener('deviceorientation',updateHeading,true);
-    window.addEventListener('deviceorientation',updateHeading,true);
+    window.removeEventListener('deviceorientation', updateHeading, true);
+    window.addEventListener('deviceorientation', updateHeading, true);
     document.getElementById('btn-compass').classList.add('active');
+    mapRotationEnabled = true;
   }
 }
 
