@@ -41,7 +41,55 @@
       overflow: hidden;
     }
 
-    /* LOADING */
+    /* LOCATION PERMISSION POPUP */
+    #location-popup {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 99998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    #location-popup-card {
+      background: rgba(15,42,29,0.98);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      max-width: 300px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    }
+    #location-popup-icon { font-size: 56px; }
+    #location-popup h2 { font-size: 18px; font-weight: 700; color: var(--amber); }
+    #location-popup p { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+    #location-popup-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #0F2A1D;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: Inter, sans-serif;
+      margin-top: 4px;
+    }
+    #location-popup-skip {
+      font-size: 11px;
+      color: var(--text-dim);
+      cursor: pointer;
+      text-decoration: underline;
+      background: none;
+      border: none;
+      font-family: Inter, sans-serif;
+    }
     #loading {
       position: fixed; inset: 0;
       background: var(--bg);
@@ -478,6 +526,17 @@
 </head>
 <body>
 
+<div id="location-popup" style="display:none;">
+  <div id="location-popup-card">
+    <div id="location-popup-icon">📲</div>
+    <h2>Dodaj na domači zaslon</h2>
+    <p id="install-instructions"></p>
+    <button id="location-popup-btn" onclick="document.getElementById('location-popup').style.display='none'">
+      Razumem
+    </button>
+  </div>
+</div>
+
 <div id="loading">
   <div class="load-boar">🐗</div>
   <h2>LD DRAVINJA MAJŠPERK</h2>
@@ -818,7 +877,63 @@ const playerIcon = L.divIcon({
 
 let playerMarker=null, accuracyCircle=null, lastPos=null, wasOutside=false;
 
-// Smooth animacija med GPS updatei
+// LOCATION PERMISSION
+function requestLocation() {
+  document.getElementById('location-popup').style.display = 'none';
+  startGPS();
+}
+
+function skipLocation() {
+  document.getElementById('location-popup').style.display = 'none';
+}
+
+function startGPS() {
+  if (!('geolocation' in navigator)) {
+    document.getElementById('gps-text').textContent = 'GPS ni podprt';
+    return;
+  }
+  navigator.geolocation.watchPosition(onPosition, onError, {
+    enableHighAccuracy: true,
+    timeout: 5000,
+    maximumAge: 0
+  });
+}
+
+// INSTALL INSTRUCTIONS - pokaži samo enkrat
+function showInstallInstructions() {
+  // Če je že nameščena kot app - ne prikazuj
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  // Če je že videl navodila - ne prikazuj
+  if (localStorage.getItem('install_shown')) return;
+  
+  localStorage.setItem('install_shown', '1');
+  
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isAndroid = /Android/.test(navigator.userAgent);
+  
+  let text = '';
+  if (isIOS) {
+    text = `<b>iPhone/iPad:</b><br>
+    1. Klikni ikono <b>□↑</b> (Deli) spodaj<br>
+    2. Izberi <b>"Dodaj na začetni zaslon"</b><br>
+    3. Klikni <b>"Dodaj"</b>`;
+  } else if (isAndroid) {
+    text = `<b>Android:</b><br>
+    1. Klikni <b>⋮</b> (3 pike) zgoraj desno<br>
+    2. Izberi <b>"Dodaj na začetni zaslon"</b><br>
+    3. Klikni <b>"Dodaj"</b>`;
+  } else {
+    return; // Desktop - ne prikazuj
+  }
+  
+  document.getElementById('install-instructions').innerHTML = text;
+  document.getElementById('location-popup').style.display = 'flex';
+}
+
+function showLocationPopup() {
+  startGPS();
+  showInstallInstructions();
+}
 let animFrame = null;
 let fromLat = null, fromLng = null;
 let toLat = null, toLng = null;
@@ -908,10 +1023,10 @@ function onError() {
   document.getElementById('gps-text').textContent='GPS napaka';
 }
 navigator.geolocation?.watchPosition(onPosition, onError, {
-  enableHighAccuracy: true,
-  timeout: 5000,
-  maximumAge: 0  // Vedno sveže koordinate - brez zamika
-});
+    enableHighAccuracy: true,
+    timeout: 5000,
+    maximumAge: 0
+  });
 
 // COMPASS
 function updateHeading(e) {
@@ -1347,6 +1462,7 @@ window.addEventListener('load', () => {
     requestCompass();
     document.getElementById('btn-map-toggle').classList.add('satellite');
     loadFromStorage();
+    showLocationPopup();
   }, 1800);
 });
 
