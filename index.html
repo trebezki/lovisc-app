@@ -51,8 +51,8 @@
 
     #tut-bg {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.75);
       z-index: 99991;
+      pointer-events: all;
     }
 
     #tut-hole {
@@ -60,12 +60,9 @@
       z-index: 99993;
       border-radius: 50%;
       border: 3px solid var(--accent);
-      box-shadow: 0 0 20px rgba(136,176,75,0.5);
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.78), 0 0 20px rgba(136,176,75,0.6);
       transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
       pointer-events: none;
-      background: transparent;
-      /* Izreži luknjo v overlay */
-      outline: 9999px solid rgba(0,0,0,0.75);
     }
 
     /* Kartica ZRAVEN elementa */
