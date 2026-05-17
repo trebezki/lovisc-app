@@ -131,7 +131,7 @@
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.85);
-      z-index: 99998;
+      z-index: 999999;
       display: none;
       align-items: center;
       justify-content: center;
@@ -626,6 +626,13 @@
   </div>
 </div>
 
+<div id="loading">
+  <div class="load-boar">🐗</div>
+  <h2>LD DRAVINJA MAJŠPERK</h2>
+  <p>Nalaganje zemljevida...</p>
+  <div class="load-bar"><div class="load-fill"></div></div>
+</div>
+
 <div id="location-popup">
   <div id="location-popup-card">
     <div id="location-popup-icon">📲</div>
@@ -635,13 +642,6 @@
       Razumem
     </button>
   </div>
-</div>
-
-<div id="loading">
-  <div class="load-boar">🐗</div>
-  <h2>LD DRAVINJA MAJŠPERK</h2>
-  <p>Nalaganje zemljevida...</p>
-  <div class="load-bar"><div class="load-fill"></div></div>
 </div>
 
 <div id="alert-overlay">
@@ -1690,6 +1690,7 @@ window.addEventListener('load', () => {
     requestCompass();
     document.getElementById('btn-map-toggle').classList.add('satellite');
     loadFromStorage();
+    startGPS();
 
     if (isStandalone) {
       setTimeout(tutStart, 600);
