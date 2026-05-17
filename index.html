@@ -1132,14 +1132,17 @@ function showInstallInstructions() {
     || window.navigator.standalone === true;
 
   if (isStandalone) {
-    // Nameščena app → tutorial
     setTimeout(tutStart, 600);
     return;
   }
 
-  // V brskalniku → VEDNO pokaži navodila
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const isAndroid = /Android/.test(navigator.userAgent);
+  // Desktop - ne prikazuj
+  if (window.innerWidth > 768) return;
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(navigator.userAgent) ||
+    /Linux/i.test(navigator.userAgent) && /Mobile/i.test(navigator.userAgent);
 
   let text = '';
   if (isIOS) {
@@ -1176,7 +1179,7 @@ function showInstallInstructions() {
     </svg>
     <b>"Dodaj"</b>`;
   } else {
-    return; // Desktop
+    return;
   }
 
   document.getElementById('install-instructions').innerHTML = text;
