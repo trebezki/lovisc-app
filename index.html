@@ -51,17 +51,21 @@
 
     #tut-bg {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.82);
+      background: rgba(0,0,0,0.75);
       z-index: 99991;
     }
 
     #tut-hole {
       position: fixed;
-      z-index: 99992;
+      z-index: 99993;
       border-radius: 50%;
-      box-shadow: 0 0 0 4px var(--accent), 0 0 0 9999px rgba(0,0,0,0.82);
+      border: 3px solid var(--accent);
+      box-shadow: 0 0 20px rgba(136,176,75,0.5);
       transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
       pointer-events: none;
+      background: transparent;
+      /* Izreži luknjo v overlay */
+      outline: 9999px solid rgba(0,0,0,0.75);
     }
 
     /* Kartica ZRAVEN elementa */
@@ -627,7 +631,7 @@
     <div id="location-popup-icon">📲</div>
     <h2>Dodaj na domači zaslon</h2>
     <p id="install-instructions"></p>
-    <button id="location-popup-btn" onclick="document.getElementById('location-popup').style.display='none'">
+    <button id="location-popup-btn" onclick="document.getElementById('location-popup').style.display='none';">
       Razumem
     </button>
   </div>
@@ -976,33 +980,33 @@ let playerMarker=null, accuracyCircle=null, lastPos=null, wasOutside=false;
 // ── TUTORIAL ──
 const TUT_STEPS = [
   {
-    icon: '🗺️',
-    title: 'Zamenjaj pogled mape',
-    text: 'Stisni ta gumb za preklop med satelitskim in navadnim pogledom.',
-    target: () => document.getElementById('btn-map-toggle'),
-  },
-  {
     icon: '📍',
     title: 'Moja lokacija',
-    text: 'Stisni da se mapa vrne na tvojo lokacijo. Ko postane rumen - mapa ne sledi, stisni za vrnitev.',
+    text: 'Modra puščica si ti. Stisni ta gumb da se mapa vrne nate. Ko postane rumen - mapa ne sledi, stisni za vrnitev.',
     target: () => document.getElementById('btn-center'),
   },
   {
+    icon: '🗺️',
+    title: 'Zamenjaj pogled',
+    text: 'Preklopi med satelitskim pogledom in navadno mapo.',
+    target: () => document.getElementById('btn-map-toggle'),
+  },
+  {
     icon: '☁️',
-    title: 'Prenesi offline mapo',
-    text: 'Enkrat stisni doma na WiFi. Celotna mapa lovišča se shrani - potem deluje brez interneta!',
+    title: 'Offline mapa',
+    text: 'Enkrat stisni doma na WiFi. Prenese celotno mapo lovišča - potem deluje brez interneta v gozdu!',
     target: () => document.getElementById('btn-offline'),
   },
   {
     icon: '🧭',
     title: 'Kompas',
-    text: 'Stisni za vklop kompasa. Puščica se obrača skupaj s tabo.',
+    text: 'Stisni za vklop kompasa. Puščica se obrača skupaj s tabo v smeri kamor gledaš.',
     target: () => document.getElementById('btn-compass'),
   },
   {
     icon: '🎯',
     title: 'Preže, Njive, Krmišča',
-    text: 'Stisni 3 pikice - razprejo se možnosti. Stisni tip da vidiš vse v lovišču ali dodaš novega s +.',
+    text: 'Stisni 3 pikice. Izberi tip → vidiš vse v lovišču. S + dodaš novo označbo z imenom in fotografijo.',
     target: () => document.getElementById('fab-main'),
   },
 ];
@@ -1023,66 +1027,70 @@ function tutStart() {
 function tutShow() {
   if (tutStep >= TUT_STEPS.length) { tutEnd(); return; }
   const step = TUT_STEPS[tutStep];
-  const el = step.target();
+  const el = step.target ? step.target() : null;
 
   document.getElementById('tut-icon').textContent = step.icon;
   document.getElementById('tut-title').textContent = step.title;
   document.getElementById('tut-text').textContent = step.text;
-  document.getElementById('tut-btn').textContent = tutStep === TUT_STEPS.length-1 ? '✓ Razumem' : 'Naprej →';
+  document.getElementById('tut-btn').textContent = tutStep === TUT_STEPS.length-1 ? '✓ Začni loviti!' : 'Naprej →';
   document.getElementById('tut-skip-btn').style.display = tutStep === TUT_STEPS.length-1 ? 'none' : 'block';
 
   document.querySelectorAll('.tut-dot').forEach((d,i) => {
     d.classList.toggle('active', i === tutStep);
   });
 
+  const hole = document.getElementById('tut-hole');
+  const arrow = document.getElementById('tut-arrow');
+  const card = document.getElementById('tut-card');
+  const screenW = window.innerWidth;
+  const screenH = window.innerHeight;
+
   if (el) {
     const r = el.getBoundingClientRect();
     const cx = r.left + r.width/2;
     const cy = r.top + r.height/2;
-    const size = Math.max(r.width, r.height) + 24;
+    const size = Math.max(r.width, r.height) + 28;
 
-    // Osvetli element
-    const hole = document.getElementById('tut-hole');
+    hole.style.display = 'block';
     hole.style.width = size + 'px';
     hole.style.height = size + 'px';
     hole.style.left = (cx - size/2) + 'px';
     hole.style.top = (cy - size/2) + 'px';
 
-    // Pozicioniraj kartico zraven elementa
-    const card = document.getElementById('tut-card');
+    // Kartica - levo ali desno
     const cardW = 210;
-    const margin = 14;
-    const screenW = window.innerWidth;
-    const screenH = window.innerHeight;
-
-    // Levo ali desno od elementa?
+    const margin = 12;
     if (cx > screenW / 2) {
-      // Element je na desni - kartica gre levo
       card.style.right = (screenW - r.left + margin) + 'px';
       card.style.left = 'auto';
+      arrow.textContent = '👉';
+      arrow.style.left = (r.left - 40) + 'px';
     } else {
-      // Element je na levi - kartica gre desno
       card.style.left = (r.right + margin) + 'px';
       card.style.right = 'auto';
+      arrow.textContent = '👈';
+      arrow.style.left = (r.right + 6) + 'px';
     }
 
-    // Vertikalno - poravnaj s elementom, ne izven zaslona
-    let topPos = cy - 60;
-    topPos = Math.max(10, Math.min(topPos, screenH - 250));
+    let topPos = Math.max(10, Math.min(cy - 80, screenH - 260));
     card.style.top = topPos + 'px';
     card.style.bottom = 'auto';
+    card.style.left = card.style.left;
+    card.style.transform = 'none';
 
-    // Puščica kaže na element
-    const arrow = document.getElementById('tut-arrow');
     arrow.style.display = 'block';
-    if (cx > screenW / 2) {
-      arrow.textContent = '👉';
-      arrow.style.left = (r.left - 36) + 'px';
-    } else {
-      arrow.textContent = '👈';
-      arrow.style.left = (r.right + 4) + 'px';
-    }
-    arrow.style.top = (cy - 12) + 'px';
+    arrow.style.top = (cy - 14) + 'px';
+
+  } else {
+    // Center korak - brez elementa
+    hole.style.display = 'none';
+    arrow.style.display = 'none';
+    card.style.left = '50%';
+    card.style.right = 'auto';
+    card.style.transform = 'translateX(-50%)';
+    card.style.top = '50%';
+    card.style.bottom = 'auto';
+    card.style.marginTop = '-120px';
   }
 }
 
@@ -1120,13 +1128,16 @@ function startGPS() {
 
 // INSTALL INSTRUCTIONS - pokaži samo enkrat
 function showInstallInstructions() {
-  // Če je že nameščena kot app - ne prikazuj
-  if (window.matchMedia('(display-mode: standalone)').matches) return;
-  // Če je že videl navodila - ne prikazuj
-  if (localStorage.getItem('install_shown') === '1') return;
-  if (localStorage.getItem('install_shown_v2')) return;
-  
-  localStorage.setItem('install_shown_v2', '1');
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
+  if (isStandalone) {
+    // Odprta kot nameščena app → pokaži tutorial
+    setTimeout(tutStart, 600);
+  } else {
+    // Odprta v brskalniku → pokaži install navodila
+    if (localStorage.getItem('install_shown_v2')) return;
+    localStorage.setItem('install_shown_v2', '1');
   
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isAndroid = /Android/.test(navigator.userAgent);
@@ -1168,8 +1179,9 @@ function showInstallInstructions() {
     return; // Desktop - ne prikazuj
   }
   
-  document.getElementById('install-instructions').innerHTML = text;
-  document.getElementById('location-popup').style.display = 'flex';
+    document.getElementById('install-instructions').innerHTML = text;
+    document.getElementById('location-popup').style.display = 'flex';
+  }
 }
 
 function showLocationPopup() {
@@ -1254,7 +1266,10 @@ function onPosition(pos) {
   if (inside) { badge.classList.remove('show'); wasOutside=false; }
   else {
     badge.classList.add('show');
-    if (!wasOutside) { wasOutside=true; document.getElementById('alert-overlay').classList.add('show'); if('vibrate'in navigator)navigator.vibrate([500,200,500]); }
+    if (!wasOutside) {
+      wasOutside=true;
+      if('vibrate'in navigator)navigator.vibrate([500,200,500]);
+    }
   }
 
   if (!weatherLat) loadWeather(lat, lng);
@@ -1705,8 +1720,6 @@ window.addEventListener('load', () => {
     document.getElementById('btn-map-toggle').classList.add('satellite');
     loadFromStorage();
     showLocationPopup();
-    // Tutorial - samo prvič
-    setTimeout(tutStart, 500);
   }, 1800);
 });
 
