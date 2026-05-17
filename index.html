@@ -41,7 +41,88 @@
       overflow: hidden;
     }
 
-    /* LOCATION PERMISSION POPUP */
+    /* ── TUTORIAL ── */
+    #tutorial-overlay {
+      position: fixed; inset: 0;
+      z-index: 99990;
+      display: none;
+    }
+    #tutorial-overlay.active { display: block; }
+
+    #tut-bg {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.82);
+      z-index: 99991;
+    }
+
+    #tut-hole {
+      position: fixed;
+      z-index: 99992;
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px var(--accent), 0 0 0 9999px rgba(0,0,0,0.82);
+      transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+      pointer-events: none;
+    }
+
+    /* Kartica ZRAVEN elementa */
+    #tut-card {
+      position: fixed;
+      z-index: 99999;
+      background: rgba(15,42,29,0.98);
+      border: 1px solid var(--accent);
+      border-radius: 16px;
+      padding: 14px 16px;
+      width: 210px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+      backdrop-filter: var(--blur);
+      transition: all 0.35s;
+    }
+
+    #tut-dots {
+      display: flex; gap: 5px; margin-bottom: 10px;
+    }
+    .tut-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      transition: all 0.3s;
+    }
+    .tut-dot.active { background: var(--accent); width: 16px; border-radius: 3px; }
+
+    #tut-icon { font-size: 28px; margin-bottom: 6px; }
+    #tut-title { font-size: 13px; font-weight: 700; color: var(--amber); margin-bottom: 5px; }
+    #tut-text { font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-bottom: 12px; }
+
+    #tut-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #0F2A1D;
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: Inter, sans-serif;
+    }
+    #tut-skip-btn {
+      width: 100%; margin-top: 6px;
+      background: none; border: none;
+      color: var(--text-dim); font-size: 10px;
+      cursor: pointer; font-family: Inter, sans-serif;
+    }
+
+    #tut-arrow {
+      position: fixed;
+      z-index: 99998;
+      font-size: 24px;
+      pointer-events: none;
+      display: none;
+      animation: tut-pulse 0.8s ease-in-out infinite;
+    }
+    @keyframes tut-pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.2); }
+    }
     #location-popup {
       position: fixed;
       inset: 0;
@@ -526,6 +607,21 @@
 </head>
 <body>
 
+<!-- TUTORIAL -->
+<div id="tutorial-overlay">
+  <div id="tut-bg" onclick="tutNext()"></div>
+  <div id="tut-hole"></div>
+  <div id="tut-arrow">👆</div>
+  <div id="tut-card">
+    <div id="tut-dots"></div>
+    <div id="tut-icon"></div>
+    <div id="tut-title"></div>
+    <div id="tut-text"></div>
+    <button id="tut-btn" onclick="tutNext()">Naprej →</button>
+    <button id="tut-skip-btn" onclick="tutEnd()">Preskoči</button>
+  </div>
+</div>
+
 <div id="location-popup" style="display:none;">
   <div id="location-popup-card">
     <div id="location-popup-icon">📲</div>
@@ -877,7 +973,130 @@ const playerIcon = L.divIcon({
 
 let playerMarker=null, accuracyCircle=null, lastPos=null, wasOutside=false;
 
-// LOCATION PERMISSION
+// ── TUTORIAL ──
+const TUT_STEPS = [
+  {
+    icon: '🗺️',
+    title: 'Zamenjaj pogled mape',
+    text: 'Stisni ta gumb za preklop med satelitskim in navadnim pogledom.',
+    target: () => document.getElementById('btn-map-toggle'),
+  },
+  {
+    icon: '📍',
+    title: 'Moja lokacija',
+    text: 'Stisni da se mapa vrne na tvojo lokacijo. Ko postane rumen - mapa ne sledi, stisni za vrnitev.',
+    target: () => document.getElementById('btn-center'),
+  },
+  {
+    icon: '☁️',
+    title: 'Prenesi offline mapo',
+    text: 'Enkrat stisni doma na WiFi. Celotna mapa lovišča se shrani - potem deluje brez interneta!',
+    target: () => document.getElementById('btn-offline'),
+  },
+  {
+    icon: '🧭',
+    title: 'Kompas',
+    text: 'Stisni za vklop kompasa. Puščica se obrača skupaj s tabo.',
+    target: () => document.getElementById('btn-compass'),
+  },
+  {
+    icon: '🎯',
+    title: 'Preže, Njive, Krmišča',
+    text: 'Stisni 3 pikice - razprejo se možnosti. Stisni tip da vidiš vse v lovišču ali dodaš novega s +.',
+    target: () => document.getElementById('fab-main'),
+  },
+];
+
+let tutStep = 0;
+
+function tutStart() {
+  if (localStorage.getItem('tutorial_done')) return;
+  tutStep = 0;
+  document.getElementById('tutorial-overlay').classList.add('active');
+
+  // Nariši pike
+  const dots = document.getElementById('tut-dots');
+  dots.innerHTML = TUT_STEPS.map((_,i) => `<div class="tut-dot" id="tut-dot-${i}"></div>`).join('');
+  tutShow();
+}
+
+function tutShow() {
+  if (tutStep >= TUT_STEPS.length) { tutEnd(); return; }
+  const step = TUT_STEPS[tutStep];
+  const el = step.target();
+
+  document.getElementById('tut-icon').textContent = step.icon;
+  document.getElementById('tut-title').textContent = step.title;
+  document.getElementById('tut-text').textContent = step.text;
+  document.getElementById('tut-btn').textContent = tutStep === TUT_STEPS.length-1 ? '✓ Razumem' : 'Naprej →';
+  document.getElementById('tut-skip-btn').style.display = tutStep === TUT_STEPS.length-1 ? 'none' : 'block';
+
+  document.querySelectorAll('.tut-dot').forEach((d,i) => {
+    d.classList.toggle('active', i === tutStep);
+  });
+
+  if (el) {
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width/2;
+    const cy = r.top + r.height/2;
+    const size = Math.max(r.width, r.height) + 24;
+
+    // Osvetli element
+    const hole = document.getElementById('tut-hole');
+    hole.style.width = size + 'px';
+    hole.style.height = size + 'px';
+    hole.style.left = (cx - size/2) + 'px';
+    hole.style.top = (cy - size/2) + 'px';
+
+    // Pozicioniraj kartico zraven elementa
+    const card = document.getElementById('tut-card');
+    const cardW = 210;
+    const margin = 14;
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+
+    // Levo ali desno od elementa?
+    if (cx > screenW / 2) {
+      // Element je na desni - kartica gre levo
+      card.style.right = (screenW - r.left + margin) + 'px';
+      card.style.left = 'auto';
+    } else {
+      // Element je na levi - kartica gre desno
+      card.style.left = (r.right + margin) + 'px';
+      card.style.right = 'auto';
+    }
+
+    // Vertikalno - poravnaj s elementom, ne izven zaslona
+    let topPos = cy - 60;
+    topPos = Math.max(10, Math.min(topPos, screenH - 250));
+    card.style.top = topPos + 'px';
+    card.style.bottom = 'auto';
+
+    // Puščica kaže na element
+    const arrow = document.getElementById('tut-arrow');
+    arrow.style.display = 'block';
+    if (cx > screenW / 2) {
+      arrow.textContent = '👉';
+      arrow.style.left = (r.left - 36) + 'px';
+    } else {
+      arrow.textContent = '👈';
+      arrow.style.left = (r.right + 4) + 'px';
+    }
+    arrow.style.top = (cy - 12) + 'px';
+  }
+}
+
+function tutNext() {
+  tutStep++;
+  if (tutStep >= TUT_STEPS.length) { tutEnd(); return; }
+  tutShow();
+}
+
+function tutEnd() {
+  localStorage.setItem('tutorial_done', '1');
+  document.getElementById('tutorial-overlay').classList.remove('active');
+  document.getElementById('tut-arrow').style.display = 'none';
+}
 function requestLocation() {
   document.getElementById('location-popup').style.display = 'none';
   startGPS();
@@ -1486,6 +1705,8 @@ window.addEventListener('load', () => {
     document.getElementById('btn-map-toggle').classList.add('satellite');
     loadFromStorage();
     showLocationPopup();
+    // Tutorial - samo prvič
+    setTimeout(tutStart, 500);
   }, 1800);
 });
 
