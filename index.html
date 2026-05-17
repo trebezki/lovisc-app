@@ -1159,7 +1159,14 @@ function showInstallInstructions() {
     </svg>
     <b>"Dodaj"</b>`;
   } else if (isAndroid) {
-    text = `<b>Android:</b><br><br>
+    // Če ima Chrome native prompt - uporabi tega
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+      return;
+    }
+    // Sicer pokaži navodila
+    text = `<b>Android (Chrome):</b><br><br>
     1. Klikni ikono
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;display:inline-block">
       <circle cx="12" cy="5" r="1.5" fill="#4CAF50"/>
@@ -1722,7 +1729,15 @@ window.addEventListener('load', () => {
   }, 1800);
 });
 
-// Service Worker
+// Android install prompt
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Pokaži Android install popup
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  if (!isStandalone) showInstallInstructions();
+});
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/lovisc-app/sw.js').catch(() => {});
 }
