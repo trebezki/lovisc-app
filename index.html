@@ -1192,8 +1192,13 @@ function smoothMoveTo(lat, lng) {
 let isFollowing = true;
 map.on('dragstart', () => {
   isFollowing = false;
+  mapRotationEnabled = false;
+  // Vrni mapo na sever
+  const pane = document.querySelector('.leaflet-map-pane');
+  if (pane) pane.style.transform = pane.style.transform.replace(/rotate\([^)]+\)/, '');
   document.getElementById('btn-center').style.borderColor = 'var(--amber)';
   document.getElementById('btn-center').style.color = 'var(--amber)';
+  document.getElementById('btn-compass').classList.remove('active');
 });
 
 function onPosition(pos) {
@@ -1253,26 +1258,33 @@ navigator.geolocation?.watchPosition(onPosition, onError, {
 
 // COMPASS + MAP ROTATION
 let currentHeading = 0;
-let targetHeading = 0;
 let mapRotationEnabled = false;
 
 function updateHeading(e) {
   const h = (e.webkitCompassHeading != null) ? e.webkitCompassHeading : (e.alpha != null ? 360 - e.alpha : 0);
   
-  // Smooth heading interpolation
+  // Smooth heading
   let diff = h - currentHeading;
   if (diff > 180) diff -= 360;
   if (diff < -180) diff += 360;
-  currentHeading += diff * 0.15;
-  
+  currentHeading += diff * 0.1;
+
   // Obrni puščico
   const el = document.getElementById('player-arrow');
   if (el) el.style.transform = `rotate(${currentHeading}deg)`;
-  
-  // Obrni mapo če je sledenje vklopljeno
+
+  // Obrni samo mapa vsebino - ne UI
   if (isFollowing && mapRotationEnabled) {
-    map.getContainer().style.transform = `rotate(${-currentHeading}deg)`;
-    map.getContainer().style.transformOrigin = 'center center';
+    const pane = document.querySelector('.leaflet-map-pane');
+    if (pane) {
+      pane.style.transformOrigin = '50% 50%';
+      pane.style.transition = 'transform 0.3s ease-out';
+      // Dobimo trenutni translate ki ga Leaflet nastavi
+      const current = pane.style.transform || '';
+      const translateMatch = current.match(/translate\([^)]+\)/);
+      const translate = translateMatch ? translateMatch[0] : 'translate(0px, 0px)';
+      pane.style.transform = `${translate} rotate(${-currentHeading}deg)`;
+    }
   }
 }
 
@@ -1319,6 +1331,7 @@ setInterval(()=>{if(weatherLat)loadWeather(weatherLat,weatherLng);},10*60*1000);
 
 function centerOnMe() {
   isFollowing = true;
+  mapRotationEnabled = true;
   document.getElementById('btn-center').style.borderColor = '';
   document.getElementById('btn-center').style.color = '';
   if (lastPos) map.setView([lastPos.lat, lastPos.lng], 16);
