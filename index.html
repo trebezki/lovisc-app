@@ -256,20 +256,11 @@
 
     /* MAP */
     #map { flex:1; width:100%; z-index:1; }
-    
-    /* UI elementi ostanejo fiksen ko se mapa obrača */
-    #header, #bottom-card, #fab-wrap, #type-bar, #boundary-badge,
-    #tutorial-overlay, #location-popup, #info-panel, #save-popup,
-    #offline-progress, .leaflet-control-zoom {
-      transform: none !important;
-    }
 
-    /* iOS Safari fix za touch */
+    /* iOS Safari fix */
     html, body { overscroll-behavior: none; }
-    .leaflet-container { cursor: grab; }
-    .leaflet-container:active { cursor: grabbing; }
 
-    /* FAB in type-bar ne blokirata mape */
+    /* FAB ne blokira mape */
     #boundary-badge { pointer-events: none; }
 
     /* ZOOM */
@@ -286,8 +277,17 @@
       box-shadow:0 4px 15px rgba(0,0,0,0.3) !important;
     }
 
-    /* ZOOM - pozicija */
-    .leaflet-top.leaflet-left { top: 10px !important; left: 10px !important; }
+    /* Zoom gumbi ostanejo fiksen */
+    .leaflet-top.leaflet-left {
+      top: 10px !important;
+      left: 10px !important;
+      transform: none !important;
+    }
+
+    /* Samo tiles se obračajo */
+    .leaflet-tile-pane {
+      transition: transform 0.1s linear;
+    }
 
     /* ── FAB MENU - med + in - gumbi ── */
     #fab-wrap {
@@ -1200,7 +1200,12 @@ function smoothMoveTo(lat, lng) {
 let isFollowing = true;
 map.on('dragstart', () => {
   isFollowing = false;
-  // Vrni mapo na sever
+  // Resetiraj rotacijo panov
+  const panes = map.getPanes();
+  if (panes.tilePane) panes.tilePane.style.transform = '';
+  if (panes.overlayPane) panes.overlayPane.style.transform = '';
+  if (panes.markerPane) panes.markerPane.style.transform = '';
+  if (panes.shadowPane) panes.shadowPane.style.transform = '';
   map.getContainer().style.transform = '';
   document.getElementById('btn-center').style.borderColor = 'var(--amber)';
   document.getElementById('btn-center').style.color = 'var(--amber)';
@@ -1273,14 +1278,17 @@ function updateHeading(e) {
   if (diff < -180) diff += 360;
   currentHeading += diff * 0.08;
 
-  // Puščica vedno gor, mapa se obrača
+  // Puščica vedno gor
   const el = document.getElementById('player-arrow');
   if (el) el.style.transform = 'rotate(0deg)';
 
-  // Obrni mapo samo ko je lock on
+  // Obrni samo tile pane ko je lock on
   if (isFollowing) {
-    map.getContainer().style.transform = `rotate(${-currentHeading}deg)`;
-    map.getContainer().style.transformOrigin = '50% 50%';
+    const panes = map.getPanes();
+    if (panes.tilePane) panes.tilePane.style.transform = `rotate(${-currentHeading}deg)`;
+    if (panes.overlayPane) panes.overlayPane.style.transform = `rotate(${-currentHeading}deg)`;
+    if (panes.markerPane) panes.markerPane.style.transform = `rotate(${-currentHeading}deg)`;
+    if (panes.shadowPane) panes.shadowPane.style.transform = `rotate(${-currentHeading}deg)`;
   }
 }
 
