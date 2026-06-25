@@ -256,6 +256,13 @@
 
     /* MAP */
     #map { flex:1; width:100%; z-index:1; }
+    
+    /* UI elementi ostanejo fiksen ko se mapa obrača */
+    #header, #bottom-card, #fab-wrap, #type-bar, #boundary-badge,
+    #tutorial-overlay, #location-popup, #info-panel, #save-popup,
+    #offline-progress, .leaflet-control-zoom {
+      transform: none !important;
+    }
 
     /* iOS Safari fix za touch */
     html, body { overscroll-behavior: none; }
@@ -1193,7 +1200,8 @@ function smoothMoveTo(lat, lng) {
 let isFollowing = true;
 map.on('dragstart', () => {
   isFollowing = false;
-  stopRotation();
+  // Vrni mapo na sever
+  map.getContainer().style.transform = '';
   document.getElementById('btn-center').style.borderColor = 'var(--amber)';
   document.getElementById('btn-center').style.color = 'var(--amber)';
 });
@@ -1253,26 +1261,8 @@ navigator.geolocation?.watchPosition(onPosition, onError, {
     maximumAge: 0
   });
 
-// COMPASS + MAP ROTATION
+// COMPASS
 let currentHeading = 0;
-let mapRotationEnabled = false;
-let rotationFrame = null;
-
-function applyRotation() {
-  if (!mapRotationEnabled || !isFollowing) return;
-  
-  const container = map.getContainer();
-  const mapEl = container.querySelector('.leaflet-map-pane');
-  if (mapEl) {
-    mapEl.style.transformOrigin = '50% 50%';
-    const t = mapEl.style.transform || '';
-    // Poberi samo translate del
-    const tr = t.match(/translate3d\([^)]+\)/) || t.match(/translate\([^)]+\)/);
-    const translate = tr ? tr[0] : '';
-    mapEl.style.transform = `${translate} rotate(${-currentHeading}deg)`;
-  }
-  rotationFrame = requestAnimationFrame(applyRotation);
-}
 
 function updateHeading(e) {
   const h = (e.webkitCompassHeading != null) ? e.webkitCompassHeading
@@ -1283,9 +1273,15 @@ function updateHeading(e) {
   if (diff < -180) diff += 360;
   currentHeading += diff * 0.08;
 
-  // Puščica vedno gor - mapa se obrača namesto nje
+  // Puščica vedno gor, mapa se obrača
   const el = document.getElementById('player-arrow');
   if (el) el.style.transform = 'rotate(0deg)';
+
+  // Obrni mapo samo ko je lock on
+  if (isFollowing) {
+    map.getContainer().style.transform = `rotate(${-currentHeading}deg)`;
+    map.getContainer().style.transformOrigin = '50% 50%';
+  }
 }
 
 function requestCompass() {
@@ -1295,35 +1291,13 @@ function requestCompass() {
         window.removeEventListener('deviceorientation', updateHeading, true);
         window.addEventListener('deviceorientation', updateHeading, true);
         document.getElementById('btn-compass').classList.add('active');
-        mapRotationEnabled = true;
-        if (rotationFrame) cancelAnimationFrame(rotationFrame);
-        applyRotation();
       }
     }).catch(console.error);
   } else {
     window.removeEventListener('deviceorientation', updateHeading, true);
     window.addEventListener('deviceorientation', updateHeading, true);
     document.getElementById('btn-compass').classList.add('active');
-    mapRotationEnabled = true;
-    if (rotationFrame) cancelAnimationFrame(rotationFrame);
-    applyRotation();
   }
-}
-
-function stopRotation() {
-  mapRotationEnabled = false;
-  if (rotationFrame) cancelAnimationFrame(rotationFrame);
-  rotationFrame = null;
-  currentHeading = 0;
-  const mapEl = map.getContainer().querySelector('.leaflet-map-pane');
-  if (mapEl) {
-    const t = mapEl.style.transform || '';
-    const tr = t.match(/translate3d\([^)]+\)/) || t.match(/translate\([^)]+\)/);
-    mapEl.style.transform = tr ? tr[0] : '';
-  }
-  document.getElementById('btn-compass').classList.remove('active');
-  const el = document.getElementById('player-arrow');
-  if (el) el.style.transform = `rotate(${currentHeading}deg)`;
 }
 
 // CLOCK
@@ -1354,11 +1328,6 @@ function centerOnMe() {
   document.getElementById('btn-center').style.borderColor = '';
   document.getElementById('btn-center').style.color = '';
   if (lastPos) map.setView([lastPos.lat, lastPos.lng], 16);
-  // Vklopi rotacijo nazaj če je kompas aktiven
-  if (document.getElementById('btn-compass').classList.contains('active')) {
-    mapRotationEnabled = true;
-    if (!rotationFrame) applyRotation();
-  }
 }
 function dismissAlert() { document.getElementById('alert-overlay').classList.remove('show'); }
 
