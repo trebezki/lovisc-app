@@ -289,10 +289,11 @@
       transition: transform 0.1s linear;
     }
 
-    /* ── FAB MENU - med + in - gumbi ── */
+    /* ── FAB MENU - fiksna pozicija, ne rotira ── */
     #fab-wrap {
-      position: absolute;
-      top: 37px; right: 10px;
+      position: fixed;
+      top: calc(10px + 56px);
+      right: 10px;
       z-index: 500;
       display: flex;
       flex-direction: column;
@@ -361,7 +362,7 @@
 
     /* TYPE BAR - pozicioniran glede na kliknjeni gumb */
     #type-bar {
-      position: absolute;
+      position: fixed;
       right: 58px;
       z-index: 500;
       display: none;
@@ -1200,13 +1201,7 @@ function smoothMoveTo(lat, lng) {
 let isFollowing = true;
 map.on('dragstart', () => {
   isFollowing = false;
-  // Resetiraj rotacijo panov
-  const panes = map.getPanes();
-  if (panes.tilePane) panes.tilePane.style.transform = '';
-  if (panes.overlayPane) panes.overlayPane.style.transform = '';
-  if (panes.markerPane) panes.markerPane.style.transform = '';
-  if (panes.shadowPane) panes.shadowPane.style.transform = '';
-  map.getContainer().style.transform = '';
+  document.getElementById('map').style.transform = '';
   document.getElementById('btn-center').style.borderColor = 'var(--amber)';
   document.getElementById('btn-center').style.color = 'var(--amber)';
 });
@@ -1282,13 +1277,11 @@ function updateHeading(e) {
   const el = document.getElementById('player-arrow');
   if (el) el.style.transform = 'rotate(0deg)';
 
-  // Obrni samo tile pane ko je lock on
+  // Rotiraj samo #map div ko je lock on
   if (isFollowing) {
-    const panes = map.getPanes();
-    if (panes.tilePane) panes.tilePane.style.transform = `rotate(${-currentHeading}deg)`;
-    if (panes.overlayPane) panes.overlayPane.style.transform = `rotate(${-currentHeading}deg)`;
-    if (panes.markerPane) panes.markerPane.style.transform = `rotate(${-currentHeading}deg)`;
-    if (panes.shadowPane) panes.shadowPane.style.transform = `rotate(${-currentHeading}deg)`;
+    const mapEl = document.getElementById('map');
+    mapEl.style.transform = `rotate(${-currentHeading}deg)`;
+    mapEl.style.transformOrigin = '50% 50%';
   }
 }
 
