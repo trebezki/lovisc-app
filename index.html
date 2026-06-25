@@ -1193,16 +1193,9 @@ function smoothMoveTo(lat, lng) {
 let isFollowing = true;
 map.on('dragstart', () => {
   isFollowing = false;
-  mapRotationEnabled = false;
-  if (rotationFrame) cancelAnimationFrame(rotationFrame);
-  // Vrni panes na 0
-  ['tilePane','overlayPane','shadowPane','markerPane'].forEach(p => {
-    if (map.getPanes()[p]) map.getPanes()[p].style.transform = '';
-  });
-  currentHeading = 0;
+  stopRotation();
   document.getElementById('btn-center').style.borderColor = 'var(--amber)';
   document.getElementById('btn-center').style.color = 'var(--amber)';
-  document.getElementById('btn-compass').classList.remove('active');
 });
 
 function onPosition(pos) {
@@ -1265,33 +1258,34 @@ let currentHeading = 0;
 let mapRotationEnabled = false;
 let rotationFrame = null;
 
-function smoothRotate() {
-  if (!mapRotationEnabled) return;
+function applyRotation() {
+  if (!mapRotationEnabled || !isFollowing) return;
   
-  const tilePane = map.getPanes().tilePane;
-  const overlayPane = map.getPanes().overlayPane;
-  const shadowPane = map.getPanes().shadowPane;
-  const markerPane = map.getPanes().markerPane;
-  
-  if (tilePane) tilePane.style.transform = `rotate(${-currentHeading}deg)`;
-  if (overlayPane) overlayPane.style.transform = `rotate(${-currentHeading}deg)`;
-  if (shadowPane) shadowPane.style.transform = `rotate(${-currentHeading}deg)`;
-  if (markerPane) markerPane.style.transform = `rotate(${-currentHeading}deg)`;
-
-  rotationFrame = requestAnimationFrame(smoothRotate);
+  const container = map.getContainer();
+  const mapEl = container.querySelector('.leaflet-map-pane');
+  if (mapEl) {
+    mapEl.style.transformOrigin = '50% 50%';
+    const t = mapEl.style.transform || '';
+    // Poberi samo translate del
+    const tr = t.match(/translate3d\([^)]+\)/) || t.match(/translate\([^)]+\)/);
+    const translate = tr ? tr[0] : '';
+    mapEl.style.transform = `${translate} rotate(${-currentHeading}deg)`;
+  }
+  rotationFrame = requestAnimationFrame(applyRotation);
 }
 
 function updateHeading(e) {
-  const h = (e.webkitCompassHeading != null) ? e.webkitCompassHeading : (e.alpha != null ? 360 - e.alpha : 0);
-  
+  const h = (e.webkitCompassHeading != null) ? e.webkitCompassHeading
+    : (e.alpha != null ? 360 - e.alpha : 0);
+
   let diff = h - currentHeading;
   if (diff > 180) diff -= 360;
   if (diff < -180) diff += 360;
-  currentHeading += diff * 0.1;
+  currentHeading += diff * 0.08;
 
-  // Puščica kaže vedno gor ker je mapa rotirana
+  // Puščica vedno gor - mapa se obrača namesto nje
   const el = document.getElementById('player-arrow');
-  if (el) el.style.transform = `rotate(0deg)`;
+  if (el) el.style.transform = 'rotate(0deg)';
 }
 
 function requestCompass() {
@@ -1302,7 +1296,8 @@ function requestCompass() {
         window.addEventListener('deviceorientation', updateHeading, true);
         document.getElementById('btn-compass').classList.add('active');
         mapRotationEnabled = true;
-        smoothRotate();
+        if (rotationFrame) cancelAnimationFrame(rotationFrame);
+        applyRotation();
       }
     }).catch(console.error);
   } else {
@@ -1310,8 +1305,25 @@ function requestCompass() {
     window.addEventListener('deviceorientation', updateHeading, true);
     document.getElementById('btn-compass').classList.add('active');
     mapRotationEnabled = true;
-    smoothRotate();
+    if (rotationFrame) cancelAnimationFrame(rotationFrame);
+    applyRotation();
   }
+}
+
+function stopRotation() {
+  mapRotationEnabled = false;
+  if (rotationFrame) cancelAnimationFrame(rotationFrame);
+  rotationFrame = null;
+  currentHeading = 0;
+  const mapEl = map.getContainer().querySelector('.leaflet-map-pane');
+  if (mapEl) {
+    const t = mapEl.style.transform || '';
+    const tr = t.match(/translate3d\([^)]+\)/) || t.match(/translate\([^)]+\)/);
+    mapEl.style.transform = tr ? tr[0] : '';
+  }
+  document.getElementById('btn-compass').classList.remove('active');
+  const el = document.getElementById('player-arrow');
+  if (el) el.style.transform = `rotate(${currentHeading}deg)`;
 }
 
 // CLOCK
@@ -1339,10 +1351,14 @@ setInterval(()=>{if(weatherLat)loadWeather(weatherLat,weatherLng);},10*60*1000);
 
 function centerOnMe() {
   isFollowing = true;
-  mapRotationEnabled = true;
   document.getElementById('btn-center').style.borderColor = '';
   document.getElementById('btn-center').style.color = '';
   if (lastPos) map.setView([lastPos.lat, lastPos.lng], 16);
+  // Vklopi rotacijo nazaj če je kompas aktiven
+  if (document.getElementById('btn-compass').classList.contains('active')) {
+    mapRotationEnabled = true;
+    if (!rotationFrame) applyRotation();
+  }
 }
 function dismissAlert() { document.getElementById('alert-overlay').classList.remove('show'); }
 
