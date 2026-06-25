@@ -254,8 +254,22 @@
     }
     .badge-dot { width:7px; height:7px; border-radius:50%; background:var(--alert); animation:blink 0.8s infinite; }
 
-    /* MAP */
-    #map { flex:1; width:100%; z-index:1; }
+    /* MAP ROTATION WRAPPER */
+    #map-wrapper {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    #map {
+      position: absolute;
+      /* Večji od wrapperja da pokrije kote pri rotaciji */
+      top: -25%;
+      left: -25%;
+      width: 150%;
+      height: 150%;
+      z-index: 1;
+      transition: transform 0.1s linear;
+    }
 
     /* iOS Safari fix */
     html, body { overscroll-behavior: none; }
@@ -691,7 +705,8 @@
   Zunaj meje lovišča
 </div>
 
-<!-- MAP + floating elements -->
+<!-- MAP WRAPPER za rotacijo -->
+<div id="map-wrapper">
 <div id="map">
 
 <!-- MARKER FAB MENU -->
@@ -801,6 +816,7 @@
 </div>
 
 </div><!-- end #map -->
+</div><!-- end #map-wrapper -->
 
 <!-- BOTTOM CARD -->
 <div id="bottom-card">
@@ -1277,11 +1293,9 @@ function updateHeading(e) {
   const el = document.getElementById('player-arrow');
   if (el) el.style.transform = 'rotate(0deg)';
 
-  // Rotiraj samo #map div ko je lock on
+  // Rotiraj #map div ko je lock on
   if (isFollowing) {
-    const mapEl = document.getElementById('map');
-    mapEl.style.transform = `rotate(${-currentHeading}deg)`;
-    mapEl.style.transformOrigin = '50% 50%';
+    document.getElementById('map').style.transform = `rotate(${-currentHeading}deg)`;
   }
 }
 
