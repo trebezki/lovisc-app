@@ -14,6 +14,7 @@
   <title>LD Dravinja Majšperk</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate-src.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -1193,9 +1194,12 @@ let isFollowing = true;
 map.on('dragstart', () => {
   isFollowing = false;
   mapRotationEnabled = false;
-  // Vrni mapo na sever
-  const pane = document.querySelector('.leaflet-map-pane');
-  if (pane) pane.style.transform = pane.style.transform.replace(/rotate\([^)]+\)/, '');
+  if (rotationFrame) cancelAnimationFrame(rotationFrame);
+  // Vrni panes na 0
+  ['tilePane','overlayPane','shadowPane','markerPane'].forEach(p => {
+    if (map.getPanes()[p]) map.getPanes()[p].style.transform = '';
+  });
+  currentHeading = 0;
   document.getElementById('btn-center').style.borderColor = 'var(--amber)';
   document.getElementById('btn-center').style.color = 'var(--amber)';
   document.getElementById('btn-compass').classList.remove('active');
@@ -1259,33 +1263,35 @@ navigator.geolocation?.watchPosition(onPosition, onError, {
 // COMPASS + MAP ROTATION
 let currentHeading = 0;
 let mapRotationEnabled = false;
+let rotationFrame = null;
+
+function smoothRotate() {
+  if (!mapRotationEnabled) return;
+  
+  const tilePane = map.getPanes().tilePane;
+  const overlayPane = map.getPanes().overlayPane;
+  const shadowPane = map.getPanes().shadowPane;
+  const markerPane = map.getPanes().markerPane;
+  
+  if (tilePane) tilePane.style.transform = `rotate(${-currentHeading}deg)`;
+  if (overlayPane) overlayPane.style.transform = `rotate(${-currentHeading}deg)`;
+  if (shadowPane) shadowPane.style.transform = `rotate(${-currentHeading}deg)`;
+  if (markerPane) markerPane.style.transform = `rotate(${-currentHeading}deg)`;
+
+  rotationFrame = requestAnimationFrame(smoothRotate);
+}
 
 function updateHeading(e) {
   const h = (e.webkitCompassHeading != null) ? e.webkitCompassHeading : (e.alpha != null ? 360 - e.alpha : 0);
   
-  // Smooth heading
   let diff = h - currentHeading;
   if (diff > 180) diff -= 360;
   if (diff < -180) diff += 360;
   currentHeading += diff * 0.1;
 
-  // Obrni puščico
+  // Puščica kaže vedno gor ker je mapa rotirana
   const el = document.getElementById('player-arrow');
-  if (el) el.style.transform = `rotate(${currentHeading}deg)`;
-
-  // Obrni samo mapa vsebino - ne UI
-  if (isFollowing && mapRotationEnabled) {
-    const pane = document.querySelector('.leaflet-map-pane');
-    if (pane) {
-      pane.style.transformOrigin = '50% 50%';
-      pane.style.transition = 'transform 0.3s ease-out';
-      // Dobimo trenutni translate ki ga Leaflet nastavi
-      const current = pane.style.transform || '';
-      const translateMatch = current.match(/translate\([^)]+\)/);
-      const translate = translateMatch ? translateMatch[0] : 'translate(0px, 0px)';
-      pane.style.transform = `${translate} rotate(${-currentHeading}deg)`;
-    }
-  }
+  if (el) el.style.transform = `rotate(0deg)`;
 }
 
 function requestCompass() {
@@ -1296,6 +1302,7 @@ function requestCompass() {
         window.addEventListener('deviceorientation', updateHeading, true);
         document.getElementById('btn-compass').classList.add('active');
         mapRotationEnabled = true;
+        smoothRotate();
       }
     }).catch(console.error);
   } else {
@@ -1303,6 +1310,7 @@ function requestCompass() {
     window.addEventListener('deviceorientation', updateHeading, true);
     document.getElementById('btn-compass').classList.add('active');
     mapRotationEnabled = true;
+    smoothRotate();
   }
 }
 
